@@ -1,8 +1,10 @@
+@config "../../../tailwind.config.ts";
+
 @import "tailwindcss";
 @import "@nuxt/ui";
 @import "@nuxt/ui-pro";
 
-:root {
+@theme {
 	--font-sans: 'Public Sans', sans-serif;
 
 	--color-green-50: #effdf5;

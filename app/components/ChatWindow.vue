@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { onMounted, nextTick } from 'vue'
+
 interface Props {
   chatId: string
   initialMessage?: string
@@ -20,10 +22,15 @@ const {
 
 const { user, loading: userLoading } = useUser()
 
-// Handle initial message
-if (props.initialMessage) {
-  sendMessage(decodeURIComponent(props.initialMessage))
-}
+// Handle initial message - wait for the component to mount and history to load
+onMounted(() => {
+  if (props.initialMessage) {
+    // Use nextTick to ensure the chat history has been loaded first
+    nextTick(() => {
+      sendMessage(decodeURIComponent(props.initialMessage))
+    })
+  }
+})
 </script>
 
 <template>
