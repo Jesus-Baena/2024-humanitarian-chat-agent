@@ -26,8 +26,9 @@ const { user, loading: userLoading } = useUser()
 onMounted(() => {
   if (props.initialMessage) {
     // Use nextTick to ensure the chat history has been loaded first
+    const message = decodeURIComponent(props.initialMessage)
     nextTick(() => {
-      sendMessage(decodeURIComponent(props.initialMessage))
+      sendMessage(message)
     })
   }
 })
