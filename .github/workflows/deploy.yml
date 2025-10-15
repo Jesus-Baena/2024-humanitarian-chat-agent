@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: jesus-baena/baena-chat
+  IMAGE_NAME: jesus-baena/chat-humanitarian-agent
 
 jobs:
   build:
@@ -58,7 +58,7 @@ jobs:
         if: success()
         run: |
           echo "✅ Successfully built and pushed Docker image"
-          echo "🐳 Image: ghcr.io/jesus-baena/baena-chat:latest"
+          echo "🐳 Image: ghcr.io/jesus-baena/chat-humanitarian-agent:latest"
           echo "📦 To deploy, run: ./manual-deploy.sh"
           echo "🔗 Or deploy manually on Swarm host:"
-          echo "   sudo docker service update --image ghcr.io/jesus-baena/baena-chat:latest --force web_chat"
+          echo "   sudo docker service update --image ghcr.io/jesus-baena/chat-humanitarian-agent:latest --force web_chat"
