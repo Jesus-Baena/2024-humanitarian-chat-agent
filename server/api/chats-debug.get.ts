@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
     } catch (supabaseError) {
       console.error('❌ Failed to create Supabase client:', supabaseError)
       setResponseStatus(event, 500)
-      return { error: 'Failed to initialize database connection', details: supabaseError.message }
+      return { error: 'Failed to initialize database connection', details: String(supabaseError) }
     }
 
     // Get authenticated user
@@ -36,7 +36,7 @@ export default defineEventHandler(async (event) => {
     } catch (sessionError) {
       console.error('❌ Failed to get session ID:', sessionError)
       setResponseStatus(event, 500)
-      return { error: 'Failed to create session', details: sessionError.message }
+      return { error: 'Failed to create session', details: String(sessionError) }
     }
 
     // Get or create profile ID if authenticated
@@ -96,7 +96,7 @@ export default defineEventHandler(async (event) => {
       setResponseStatus(event, 500)
       return { 
         error: 'Unexpected database error', 
-        details: queryError.message || 'Unknown error'
+        details: (queryError as Error)?.message || String(queryError) || 'Unknown error'
       }
     }
 
@@ -105,7 +105,7 @@ export default defineEventHandler(async (event) => {
     setResponseStatus(event, 500)
     return { 
       error: 'Internal server error', 
-      details: globalError.message || 'Unknown error'
+      details: (globalError as Error)?.message || String(globalError) || 'Unknown error'
     }
   }
 })
