@@ -5,9 +5,11 @@ const supabaseUrl
   = process.env.NUXT_PUBLIC_SUPABASE_URL
     || process.env.SUPABASE_URL
     || ''
-const supabaseAnonKey
-  = process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY
-    || process.env.SUPABASE_ANON_KEY
+// Support both new (sb_publishable_) and legacy (JWT anon) key formats
+const supabaseKey
+  = process.env.NUXT_PUBLIC_SUPABASE_KEY // New publishable key format
+    || process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY // Legacy JWT format
+    || process.env.SUPABASE_ANON_KEY // Legacy fallback
     || ''
 const flowiseUrl = process.env.NUXT_PUBLIC_FLOWISE_URL || ''
 const flowiseApiKey = process.env.NUXT_PUBLIC_FLOWISE_API_KEY || ''
@@ -47,12 +49,13 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     supabaseUrl,
-    supabaseAnonKey,
-    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+    supabaseKey,
+    // Support both new (sb_secret_) and legacy (service_role) key formats
+    supabaseSecretKey: process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
     public: {
       siteUrl,
       supabaseUrl,
-      supabaseAnonKey,
+      supabaseKey,
       flowiseUrl,
       flowiseApiKey
     }
@@ -62,7 +65,7 @@ export default defineNuxtConfig({
 
   supabase: {
     url: supabaseUrl,
-    key: supabaseAnonKey,
+    key: supabaseKey,
     redirectOptions: {
       login: '/',
       callback: '/',

@@ -14,12 +14,14 @@ export function getSupabaseServerClient(event: H3Event) {
     = process.env.SUPABASE_URL
       || runtimeConfig.supabaseUrl
       || runtimeConfig.public.supabaseUrl
-  const anonKey
-    = process.env.SUPABASE_ANON_KEY
-      || runtimeConfig.supabaseAnonKey
-      || runtimeConfig.public.supabaseAnonKey
-  if (!url || !anonKey) {
-    throw new Error('Missing Supabase URL or anon key')
+  // Support both new (sb_publishable_) and legacy (JWT anon) key formats
+  const key
+    = process.env.SUPABASE_KEY // New publishable key format
+      || process.env.SUPABASE_ANON_KEY // Legacy JWT format
+      || runtimeConfig.supabaseKey
+      || runtimeConfig.public.supabaseKey
+  if (!url || !key) {
+    throw new Error('Missing Supabase URL or key')
   }
 
   const host = getHeader(event, 'host') || ''
@@ -40,7 +42,7 @@ export function getSupabaseServerClient(event: H3Event) {
 
   const cookieDomain = computeCookieDomain()
 
-  return createServerClient(url, anonKey, {
+  return createServerClient(url, key, {
     cookies: {
       getAll() {
         const header = getHeader(event, 'cookie') ?? ''
