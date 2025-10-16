@@ -23,6 +23,20 @@ logs
 .env.*
 !.env.example
 
+# Prevent accidentally committing secrets
+*secret*
+*SECRET*
+*key*
+*KEY*
+*token*
+*TOKEN*
+*password*
+*PASSWORD*
+emergency-deploy.sh
+*deploy*.sh
+*.key
+*.pem
+
 # Deployment and infrastructure documentation
 # These files contain sensitive information about deployment setup
 *DEPLOYMENT*.md
