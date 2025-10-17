@@ -1,7 +1,5 @@
 <script setup lang="ts">
-// UI Pro components are auto-imported by Nuxt, no need for manual imports
 import DashboardNavbar from '~/components/DashboardNavbar.vue'
-// Home page UI only (no backend integration)
 </script>
 
 <template>

@@ -7,17 +7,11 @@
 </template>
 
 <script setup lang="ts">
-// Get the chat ID from the route
 const route = useRoute()
 const chatId = computed(() => route.params.id as string)
+const initialMessage = computed(() => route.query.message as string | undefined)
 
-// Get the initial message from query parameter
-const initialMessage = computed(
-  () => route.query.message as string | undefined
-)
-
-// Set page title
 useHead({
-  title: `Chat ${chatId.value} - Nuxt Chat`
+  title: `Chat ${chatId.value} - Humanitarian Chat`
 })
 </script>

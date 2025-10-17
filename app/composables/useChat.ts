@@ -309,7 +309,10 @@ export function useChat(chatId: string) {
     const userLocalId = generateId('user')
     addMessage({ id: userLocalId, chatId, content: trimmed, role: 'user', createdAt: new Date() })
     // Persist user message before streaming; also hints a title for new chat
-    await persistMessage('user', trimmed, trimmed)
+    // Don't await - fire and forget to avoid blocking
+    persistMessage('user', trimmed, trimmed).catch(err => {
+      console.error('[useChat] Failed to persist user message:', err)
+    })
     await handleStreamCompletion(messages.value.slice())
   }
 

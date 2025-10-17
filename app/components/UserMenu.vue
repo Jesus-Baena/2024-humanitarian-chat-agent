@@ -40,15 +40,7 @@
         />
       </template>
     </UDropdownMenu>
-    <div v-else>
-      <UButton
-        :to="loginUrl"
-        color="neutral"
-        variant="ghost"
-        class="w-full"
-        label="Login"
-      />
-    </div>
+    <!-- Login button removed - auth handled externally -->
   </div>
 </template>
 

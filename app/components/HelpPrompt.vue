@@ -1,13 +1,9 @@
 <script setup lang="ts">
-// Simple help prompt component for the home page
 async function handleSendMessage(message: string) {
   if (!message.trim()) return
 
-  // Generate a simple ID and navigate to chat page
   const chatId = Date.now().toString()
-  await navigateTo(
-    `/chat/${chatId}?message=${encodeURIComponent(message.trim())}`
-  )
+  await navigateTo(`/chat/${chatId}?message=${encodeURIComponent(message.trim())}`)
 }
 </script>
 

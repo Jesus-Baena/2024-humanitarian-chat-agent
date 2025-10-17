@@ -77,6 +77,7 @@ export default defineEventHandler(async (event) => {
     .select('id')
     .limit(1)
   if (mErr) {
+    console.error('[messages.post] Database error:', mErr.message)
     setResponseStatus(event, 500)
     return { error: mErr.message }
   }
@@ -84,11 +85,15 @@ export default defineEventHandler(async (event) => {
   const titleCandidate = (body.role === 'user' ? (body.content ?? 'New chat') : (body.titleHint || 'New chat'))
   const neatTitle = ((titleCandidate || 'New chat').split(/\r?\n/)[0] ?? 'New chat').slice(0, 80)
   const titleUpdate = chat.title ? {} : { title: neatTitle || 'New chat' }
-  await supabase
+  const { error: updateErr } = await supabase
     .schema('web')
     .from('chats')
     .update({ ...titleUpdate, updated_at: new Date().toISOString() })
     .eq('id', id)
+  
+  if (updateErr) {
+    console.error('[messages.post] Chat update error:', updateErr.message)
+  }
 
   return { id: inserted?.[0]?.id as string }
 })
