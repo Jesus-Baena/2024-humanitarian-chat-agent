@@ -50,16 +50,6 @@ import useUser from '~/composables/useUser'
 const { user, loading, logout } = useUser()
 
 const config = useRuntimeConfig()
-const loginUrl = computed(() => {
-  const base = (config.public?.authBase as string) || ''
-  const path = '/login'
-  if (typeof window !== 'undefined') {
-    const redirectTo = window.location.href
-    const qs = `?redirectTo=${encodeURIComponent(redirectTo)}`
-    return base ? `${base.replace(/\/$/, '')}${path}${qs}` : `${path}${qs}`
-  }
-  return base ? `${base.replace(/\/$/, '')}${path}` : path
-})
 
 const profileUrl = computed(() => {
   const base = (config.public?.authBase as string) || ''

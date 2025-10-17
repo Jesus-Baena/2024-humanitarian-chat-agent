@@ -117,7 +117,7 @@ docker service logs web_chat --tail 50
 
 # Test Flowise API
 curl -X POST https://flowise.baena.site/api/v1/prediction/40718af9-e9bd-47d9-a57b-009cb26f8fe3 \
-  -H "Authorization: Bearer FO5JgBFwXMPQDE_XrgDn8FSYpGbgtyeZ2h7YlJd-Skk" \
+  -H "Authorization: Bearer YOUR_FLOWISE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"question": "test"}'
 

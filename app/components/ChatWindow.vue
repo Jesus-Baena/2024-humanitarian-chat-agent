@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, nextTick, onBeforeUnmount } from 'vue'
+import { onMounted, nextTick } from 'vue'
 
 interface Props {
   chatId: string

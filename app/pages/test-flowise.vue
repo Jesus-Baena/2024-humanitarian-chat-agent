@@ -65,8 +65,9 @@ async function testConnection() {
       const errorText = await response.text()
       testResult.value = `FAILED (${response.status})\n\nError:\n${errorText}`
     }
-  } catch (error: any) {
-    testResult.value = `EXCEPTION:\n${error.message}\n\nStack:\n${error.stack}`
+  } catch (error: unknown) {
+    const err = error as Error
+    testResult.value = `EXCEPTION:\n${err.message}\n\nStack:\n${err.stack || 'No stack trace'}`
   }
 }
 </script>
