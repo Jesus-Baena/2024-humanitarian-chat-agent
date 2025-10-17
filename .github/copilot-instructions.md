@@ -24,8 +24,10 @@
 - Always use pnpm: `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm typecheck`; `pnpm install` adheres to the pinned lockfile.
 - Required env: Supabase (`NUXT_PUBLIC_SUPABASE_URL/ANON_KEY`, `SUPABASE_*`), Flowise (`NUXT_PUBLIC_FLOWISE_URL`, `NUXT_PUBLIC_FLOWISE_API_KEY`), `NUXT_UI_PRO_LICENSE` for builds.
 - `README_NEW.md` documents current setup; `README.md` is legacy Supabase CLI content kept for reference and can be ignored when onboarding.
+- **GitHub Secrets Required:** `NUXT_PUBLIC_*` vars must be set as GitHub Secrets (repo Settings → Secrets and variables → Actions) because they're baked into the build—runtime Docker Swarm secrets alone won't work for client-side code.
 
 ## Deployment & Ops
 - Swarm entrypoint (`docker-compose.yml`) shells env secrets from `/run/secrets` before starting `.output/server/index.mjs`; avoid echoing sensitive values beyond short prefixes.
 - `server/utils/supabase.ts` and `server/utils/session.ts` compute cookie domains like `.baena.ai`—preserve this for cross-subdomain auth stability.
 - No migrations are checked in; coordinate schema changes outside the repo to keep `web.chats/messages/profiles` aligned with API expectations.
+- **Critical:** Client-side secrets (`NUXT_PUBLIC_*`) need BOTH GitHub Secrets (for build) AND Docker Swarm secrets (for runtime fallback); server-side secrets (`SUPABASE_*`) only need Docker Swarm secrets.
