@@ -49,6 +49,7 @@ emergency-deploy.sh
 *REGISTRY*.md
 *SECURITY*.md
 *PORTAINER*.md
+*MCP*.md
 deploy*.sh
 manual-deploy.sh
 show-github-secrets.sh
