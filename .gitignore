@@ -32,10 +32,16 @@ logs
 *TOKEN*
 *password*
 *PASSWORD*
-emergency-deploy.sh
-*deploy*.sh
 *.key
 *.pem
+
+# Deployment scripts - some are ignored to prevent committing sensitive data
+# Allow emergency-deploy.sh and deploy.sh (template scripts with defaults)
+# Ignore manual-deploy.sh and other custom deploy scripts
+*deploy*.sh
+!deploy.sh
+!emergency-deploy.sh
+manual-deploy.sh
 
 # Deployment and infrastructure documentation
 # These files contain sensitive information about deployment setup

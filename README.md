@@ -38,6 +38,43 @@ docker build -t chat-app .
 
 See `.env.example` for required configuration.
 
+### Critical Environment Variables
+
+For production deployments, ensure these client-side variables are set:
+
+- `NUXT_PUBLIC_FLOWISE_URL` - Flowise API endpoint
+- `NUXT_PUBLIC_FLOWISE_API_KEY` - Flowise API key
+- `NUXT_PUBLIC_SUPABASE_URL` - Supabase project URL
+- `NUXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase publishable key
+
+**Note**: `NUXT_PUBLIC_*` variables must be set both at **build time** (GitHub Actions) and **runtime** (Docker service) for the application to work correctly.
+
+## Production Deployment
+
+### Quick Deploy
+
+On the Docker Swarm manager:
+
+```bash
+./deploy.sh
+```
+
+### Emergency Fix
+
+If chat completions fail with "No completion backend configured":
+
+```bash
+./emergency-deploy.sh
+```
+
+### Full Documentation
+
+See [Production Deployment Guide](docs/guides/production-deployment.md) for:
+- Complete deployment procedures
+- GitHub Actions setup
+- Environment variable configuration
+- Troubleshooting steps
+
 ## License
 
 [Your License Here]
