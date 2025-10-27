@@ -1,34 +1,47 @@
 <template>
   <div class="p-4">
-    <div v-if="loading" class="flex items-center space-x-2">
-      <USkeleton class="h-8 w-8 rounded-full" />
-      <div class="space-y-2">
-        <USkeleton class="h-4 w-[100px]" />
+    <!-- Loading State -->
+    <div v-if="loading" class="flex items-center gap-3">
+      <USkeleton class="h-8 w-8 rounded-full flex-shrink-0" />
+      <div class="flex-1 space-y-2">
+        <USkeleton class="h-3 w-24" />
+        <USkeleton class="h-2 w-32" />
       </div>
     </div>
+
+    <!-- Logged In: User Dropdown with Avatar -->
     <UDropdownMenu
       v-else-if="user"
       :items="items"
       :popper="{ placement: 'top-start' }"
     >
-      <template #default>
+      <template #default="{ open }">
         <UButton
           color="neutral"
           variant="ghost"
-          class="w-full justify-start"
-          :label="user.user_metadata?.full_name || user.email"
+          class="w-full justify-start gap-3"
+          :class="{ 'bg-elevated': open }"
         >
           <template #leading>
             <UAvatar
               :src="user.user_metadata?.avatar_url"
-              :alt="user.user_metadata?.full_name || user.email"
-              size="xs"
+              :alt="displayName"
+              size="sm"
               :ui="{
                 root: 'bg-primary-500 dark:bg-primary-400',
-                fallback: 'text-white dark:text-white text-xs font-medium'
+                fallback: 'text-white dark:text-white text-xs font-semibold'
               }"
-            />
+            >
+              <template v-if="!user.user_metadata?.avatar_url" #fallback>
+                {{ userInitials }}
+              </template>
+            </UAvatar>
           </template>
+          <div class="flex-1 flex flex-col items-start overflow-hidden">
+            <span class="text-sm font-medium truncate w-full">{{ displayName }}</span>
+            <span class="text-xs text-muted truncate w-full">{{ user.email }}</span>
+          </div>
+          <UIcon name="i-lucide-chevron-down" class="h-4 w-4 text-muted flex-shrink-0" />
         </UButton>
       </template>
       <template #item="{ item }">
@@ -40,7 +53,9 @@
         />
       </template>
     </UDropdownMenu>
-    <div v-else class="flex flex-col gap-2">
+
+    <!-- Not Logged In: Sign In Button -->
+    <div v-else>
       <UButton
         color="primary"
         variant="solid"
@@ -48,6 +63,7 @@
         :to="loginUrl"
         icon="i-lucide-log-in"
         label="Sign In"
+        class="justify-center"
       />
     </div>
   </div>
@@ -72,6 +88,22 @@ const profileUrl = computed(() => {
   const base = (config.public?.authBase as string) || ''
   const path = '/profile'
   return base ? `${base.replace(/\/$/, '')}${path}` : path
+})
+
+const displayName = computed(() => {
+  if (!user.value) return ''
+  return user.value.user_metadata?.full_name || user.value.email || 'User'
+})
+
+const userInitials = computed(() => {
+  if (!user.value) return ''
+  const name = user.value.user_metadata?.full_name || user.value.email || 'U'
+  return name
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
 })
 
 interface DropdownItemBase {
