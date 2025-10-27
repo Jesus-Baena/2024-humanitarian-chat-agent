@@ -13,6 +13,9 @@ const supabaseKey
     || ''
 const flowiseUrl = process.env.NUXT_PUBLIC_FLOWISE_URL || ''
 const flowiseApiKey = process.env.NUXT_PUBLIC_FLOWISE_API_KEY || ''
+const authBase = process.env.NUXT_PUBLIC_AUTH_BASE || ''
+const loginPath = process.env.NUXT_PUBLIC_LOGIN_PATH || '/login'
+const logoutPath = process.env.NUXT_PUBLIC_LOGOUT_PATH || '/logout'
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -57,7 +60,10 @@ export default defineNuxtConfig({
       supabaseUrl,
       supabaseKey,
       flowiseUrl,
-      flowiseApiKey
+      flowiseApiKey,
+      authBase,
+      loginPath,
+      logoutPath
     }
   },
 

@@ -40,7 +40,16 @@
         />
       </template>
     </UDropdownMenu>
-    <!-- Login button removed - auth handled externally -->
+    <div v-else class="flex flex-col gap-2">
+      <UButton
+        color="primary"
+        variant="solid"
+        block
+        :to="loginUrl"
+        icon="i-lucide-log-in"
+        label="Sign In"
+      />
+    </div>
   </div>
 </template>
 
@@ -50,6 +59,14 @@ import useUser from '~/composables/useUser'
 const { user, loading, logout } = useUser()
 
 const config = useRuntimeConfig()
+
+const loginUrl = computed(() => {
+  const base = (config.public?.authBase as string) || ''
+  const path = (config.public?.loginPath as string) || '/login'
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : ''
+  const redirectParam = currentUrl ? `?redirectTo=${encodeURIComponent(currentUrl)}` : ''
+  return base ? `${base.replace(/\/$/, '')}${path}${redirectParam}` : `${path}${redirectParam}`
+})
 
 const profileUrl = computed(() => {
   const base = (config.public?.authBase as string) || ''
