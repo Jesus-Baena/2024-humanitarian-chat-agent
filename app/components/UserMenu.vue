@@ -60,10 +60,10 @@
         color="primary"
         variant="solid"
         block
-        :to="loginUrl"
         icon="i-lucide-log-in"
         label="Sign In"
         class="justify-center"
+        @click="handleSignIn"
       />
     </div>
   </div>
@@ -75,14 +75,42 @@ import useUser from '~/composables/useUser'
 const { user, loading, logout } = useUser()
 
 const config = useRuntimeConfig()
+const supabase = useSupabaseClient()
 
-const loginUrl = computed(() => {
-  const base = (config.public?.authBase as string) || ''
-  const path = (config.public?.loginPath as string) || '/login'
-  const currentUrl = typeof window !== 'undefined' ? window.location.href : ''
-  const redirectParam = currentUrl ? `?redirectTo=${encodeURIComponent(currentUrl)}` : ''
-  return base ? `${base.replace(/\/$/, '')}${path}${redirectParam}` : `${path}${redirectParam}`
-})
+const handleSignIn = async () => {
+  const authBase = (config.public?.authBase as string) || ''
+  
+  if (authBase) {
+    // Redirect to main portfolio login with proper redirect_to parameter
+    const loginPath = (config.public?.loginPath as string) || '/login'
+    const currentUrl = typeof window !== 'undefined' ? window.location.href : ''
+    // Use redirect_to (underscore) to match main portfolio's expected parameter
+    const redirectParam = currentUrl ? `?redirect_to=${encodeURIComponent(currentUrl)}` : ''
+    window.location.href = `${authBase.replace(/\/$/, '')}${loginPath}${redirectParam}`
+  } else {
+    // Fallback: use Supabase OAuth directly (for development/testing)
+    const redirectTo = `${window.location.origin}/auth/callback`
+    
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
+      })
+      
+      if (error) {
+        console.error('Sign in error:', error)
+      }
+    } catch (err) {
+      console.error('Sign in exception:', err)
+    }
+  }
+}
 
 const profileUrl = computed(() => {
   const base = (config.public?.authBase as string) || ''

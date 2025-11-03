@@ -27,8 +27,8 @@ export default defineNuxtConfig({
     ['@nuxtjs/supabase', {
       redirectOptions: {
         login: '/',
-        callback: '/',
-        exclude: ['/', '/chat/*']
+        callback: '/auth/callback',
+        exclude: ['/', '/chat/*', '/auth/callback']
       }
     }]
   ],
@@ -74,8 +74,8 @@ export default defineNuxtConfig({
     key: supabaseKey,
     redirectOptions: {
       login: '/',
-      callback: '/',
-      exclude: ['/']
+      callback: '/auth/callback',
+      exclude: ['/auth/callback']
     }
   },
 
