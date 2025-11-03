@@ -13,7 +13,7 @@ const router = useRouter()
 
 onMounted(async () => {
   // Exchange the code for a session
-  const { data, error } = await supabase.auth.getSession()
+  const { error } = await supabase.auth.getSession()
   
   if (error) {
     console.error('Auth callback error:', error)
