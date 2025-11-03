@@ -1,0 +1,255 @@
+<script setup lang="ts">
+definePageMeta({
+  layout: 'default',
+  middleware: [] // Allow login page even when authenticated for re-auth
+})
+
+useSeoMeta({
+  title: 'Sign in to AI Chat',
+  description: 'Sign in to your account to access the humanitarian AI assistant'
+})
+
+const toast = useToast()
+const supabase = useSupabaseClient()
+const user = useSupabaseUser()
+const route = useRoute()
+const config = useRuntimeConfig()
+
+// Get the base URL for OAuth redirects (production URL in production, local in dev)
+const baseUrl = config.public.siteUrl || window.location.origin
+
+// Handle redirect_to parameter for cross-domain auth
+// Supports: baena.ai -> chat.baena.ai
+const redirectTo = computed(() => {
+  const path = route.query.redirect_to?.toString() || route.query.redirectTo?.toString()
+  if (path) {
+    // Allow redirects to chat.baena.ai from baena.ai
+    if (path.startsWith('http://localhost:3001') || 
+        path.startsWith('https://chat.baena.ai') ||
+        path.startsWith('http://chat.localhost:3001')) {
+      return path
+    }
+  }
+  // Default to index page
+  return '/'
+})
+
+// Redirect if already logged in (but allow manual re-auth)
+const isLoggingIn = ref(false)
+watch(user, (newUser) => {
+  // Only redirect if not manually trying to login
+  if (newUser && !isLoggingIn.value) {
+    if (redirectTo.value.startsWith('http')) {
+      window.location.href = redirectTo.value
+    } else {
+      navigateTo(redirectTo.value, { external: false })
+    }
+  }
+}, { immediate: true })
+
+// Form fields - using UInput built-in validation
+const email = ref('')
+const password = ref('')
+const emailError = ref('')
+const passwordError = ref('')
+
+function validateEmail(value: string) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!value) {
+    emailError.value = 'Email is required'
+    return false
+  }
+  if (!emailRegex.test(value)) {
+    emailError.value = 'Invalid email address'
+    return false
+  }
+  emailError.value = ''
+  return true
+}
+
+function validatePassword(value: string) {
+  if (!value) {
+    passwordError.value = 'Password is required'
+    return false
+  }
+  if (value.length < 6) {
+    passwordError.value = 'Password must be at least 6 characters'
+    return false
+  }
+  passwordError.value = ''
+  return true
+}
+
+// OAuth providers
+const providers = [{
+  label: 'Google',
+  icon: 'i-simple-icons-google',
+  onClick: async () => {
+    try {
+      isLoggingIn.value = true
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectTo.value.startsWith('http') 
+            ? redirectTo.value 
+            : `${baseUrl}/auth/callback?redirectTo=${encodeURIComponent(redirectTo.value)}`
+        }
+      })
+      if (error) throw error
+    } catch (error: unknown) {
+      isLoggingIn.value = false
+      toast.add({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to sign in with Google'
+      })
+    }
+  }
+}]
+
+// Validation schema
+const isSubmitting = ref(false)
+
+async function onSubmit() {
+  // Validate form
+  if (!validateEmail(email.value) || !validatePassword(password.value)) {
+    return
+  }
+
+  try {
+    isSubmitting.value = true
+    isLoggingIn.value = true
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.value,
+      password: password.value
+    })
+
+    if (error) throw error
+
+    toast.add({
+      title: 'Success',
+      description: 'Signed in successfully'
+    })
+
+    // Navigate after successful login
+    if (redirectTo.value.startsWith('http')) {
+      window.location.href = redirectTo.value
+    } else {
+      await navigateTo(redirectTo.value)
+    }
+  } catch (error: unknown) {
+    isLoggingIn.value = false
+    toast.add({
+      title: 'Error',
+      description: error instanceof Error ? error.message : 'Failed to sign in'
+    })
+  } finally {
+    isSubmitting.value = false
+  }
+}
+</script>
+
+<template>
+  <div class="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-b from-background to-muted/30">
+    <div class="w-full max-w-md space-y-8">
+      <!-- Logo -->
+      <div class="text-center">
+        <NuxtLink to="/" class="inline-block mb-4">
+          <Logo class="h-8 w-auto" />
+        </NuxtLink>
+        <h1 class="text-3xl font-bold tracking-tight">Welcome back</h1>
+        <p class="mt-2 text-sm text-muted-foreground">
+          Sign in to your humanitarian AI assistant
+        </p>
+      </div>
+
+      <!-- Auth Form -->
+      <form class="space-y-6" @submit.prevent="onSubmit">
+        <!-- Email Field -->
+        <UFormGroup label="Email address">
+          <UInput
+            v-model="email"
+            type="email"
+            placeholder="you@example.com"
+            required
+            :disabled="isSubmitting || isLoggingIn"
+            @blur="validateEmail(email)"
+          />
+          <span v-if="emailError" class="text-sm text-red-500">{{ emailError }}</span>
+        </UFormGroup>
+
+        <!-- Password Field -->
+        <UFormGroup label="Password">
+          <UInput
+            v-model="password"
+            type="password"
+            placeholder="••••••••"
+            required
+            :disabled="isSubmitting || isLoggingIn"
+            @blur="validatePassword(password)"
+          />
+          <span v-if="passwordError" class="text-sm text-red-500">{{ passwordError }}</span>
+        </UFormGroup>
+
+        <!-- Submit Button -->
+        <UButton 
+          type="submit" 
+          block 
+          size="lg"
+          :loading="isSubmitting"
+          :disabled="isSubmitting || isLoggingIn"
+        >
+          Sign in
+        </UButton>
+      </form>
+
+      <!-- OAuth Divider -->
+      <div class="relative">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-muted" />
+        </div>
+        <div class="relative flex justify-center text-sm">
+          <span class="px-2 bg-background text-muted-foreground">
+            Or continue with
+          </span>
+        </div>
+      </div>
+
+      <!-- OAuth Buttons -->
+      <div class="grid grid-cols-1 gap-3">
+        <UButton
+          v-for="provider in providers"
+          :key="provider.label"
+          :icon="provider.icon"
+          :label="provider.label"
+          color="white"
+          variant="outline"
+          block
+          :disabled="isSubmitting || isLoggingIn"
+          @click="provider.onClick"
+        >
+          {{ provider.label }}
+        </UButton>
+      </div>
+
+      <!-- Signup Link -->
+      <p class="text-center text-sm text-muted-foreground">
+        Don't have an account?
+        <ULink to="/signup" class="font-semibold text-primary hover:underline">
+          Sign up
+        </ULink>
+      </p>
+
+      <!-- Links Back to Portfolio -->
+      <div class="flex items-center justify-center gap-4 pt-4 border-t border-muted">
+        <ULink to="/" class="text-xs text-muted-foreground hover:text-foreground">
+          ← Back to home
+        </ULink>
+        <span class="text-xs text-muted-foreground">•</span>
+        <ULink to="https://baena.ai" external class="text-xs text-muted-foreground hover:text-foreground">
+          Visit portfolio ↗
+        </ULink>
+      </div>
+    </div>
+  </div>
+</template>
