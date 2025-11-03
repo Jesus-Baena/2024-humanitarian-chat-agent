@@ -41,6 +41,15 @@ jobs:
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
 
+      - name: Verify build arguments (diagnostic)
+        run: |
+          echo "🔍 Checking if secrets are available for build..."
+          echo "NUXT_UI_PRO_LICENSE: ${{ secrets.NUXT_UI_PRO_LICENSE != '' && '✅ Set' || '❌ Missing' }}"
+          echo "NUXT_PUBLIC_SUPABASE_URL: ${{ secrets.NUXT_PUBLIC_SUPABASE_URL != '' && '✅ Set' || '❌ Missing' }}"
+          echo "NUXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NUXT_PUBLIC_SUPABASE_ANON_KEY != '' && '✅ Set' || '❌ Missing' }}"
+          echo "NUXT_PUBLIC_FLOWISE_URL: ${{ secrets.NUXT_PUBLIC_FLOWISE_URL != '' && '✅ Set' || '❌ Missing' }}"
+          echo "NUXT_PUBLIC_FLOWISE_API_KEY: ${{ secrets.NUXT_PUBLIC_FLOWISE_API_KEY != '' && '✅ Set' || '❌ Missing' }}"
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
