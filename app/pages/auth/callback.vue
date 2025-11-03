@@ -12,15 +12,32 @@ const supabase = useSupabaseClient()
 const router = useRouter()
 
 onMounted(async () => {
-  // Exchange the code for a session
-  const { error } = await supabase.auth.getSession()
-  
-  if (error) {
+  try {
+    // Get the authorization code from the URL
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+    
+    if (code) {
+      // Exchange the code for a session (PKCE flow)
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+      
+      if (error) {
+        console.error('Error exchanging code for session:', error)
+        await router.push('/login?error=auth_failed')
+        return
+      }
+      
+      console.log('Successfully authenticated:', data.user?.email)
+    } else {
+      console.warn('No authorization code found in callback URL')
+    }
+    
+    // Redirect to home or the original destination
+    const redirectTo = params.get('redirectTo') || '/'
+    await router.push(redirectTo)
+  } catch (error) {
     console.error('Auth callback error:', error)
+    await router.push('/login?error=auth_failed')
   }
-  
-  // Redirect to home or the original destination
-  const redirectTo = new URLSearchParams(window.location.search).get('redirectTo') || '/'
-  await router.push(redirectTo)
 })
 </script>
