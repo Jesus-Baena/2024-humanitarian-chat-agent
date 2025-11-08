@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url'
 
-const siteUrl = process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+const siteUrl = process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3001'
 const supabaseUrl
   = process.env.NUXT_PUBLIC_SUPABASE_URL
     || process.env.SUPABASE_URL
@@ -26,15 +26,19 @@ export default defineNuxtConfig({
     '@nuxtjs/mdc',
     ['@nuxtjs/supabase', {
       redirectOptions: {
-        login: '/',
+        login: '/login',
         callback: '/auth/callback',
-        exclude: ['/', '/chat/*', '/auth/callback']
+        exclude: ['/', '/login', '/signup', '/chat/*', '/auth/callback']
       }
     }]
   ],
 
   devtools: {
     enabled: true
+  },
+
+  devServer: {
+    port: 3001
   },
 
   srcDir: 'app',
@@ -73,9 +77,9 @@ export default defineNuxtConfig({
     url: supabaseUrl,
     key: supabaseKey,
     redirectOptions: {
-      login: '/',
+      login: '/login',
       callback: '/auth/callback',
-      exclude: ['/auth/callback']
+      exclude: ['/login', '/signup', '/auth/callback']
     }
   },
 

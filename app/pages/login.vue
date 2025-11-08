@@ -164,67 +164,73 @@ async function onSubmit() {
       </div>
 
       <!-- Auth Form -->
-      <form class="space-y-6" @submit.prevent="onSubmit">
-        <!-- Email Field -->
-        <UFormGroup label="Email address">
-          <UInput
-            v-model="email"
-            type="email"
-            placeholder="you@example.com"
-            required
-            :disabled="isSubmitting || isLoggingIn"
-            @blur="validateEmail(email)"
-          />
-          <span v-if="emailError" class="text-sm text-red-500">{{ emailError }}</span>
-        </UFormGroup>
+      <div class="bg-card/50 backdrop-blur-sm rounded-lg border border-border p-6">
+        <form class="space-y-6" @submit.prevent="onSubmit">
+          <!-- Email Field -->
+          <UFormGroup label="Email address" class="space-y-2">
+            <UInput
+              v-model="email"
+              type="email"
+              placeholder="you@example.com"
+              required
+              size="lg"
+              :disabled="isSubmitting || isLoggingIn"
+              @blur="validateEmail(email)"
+            />
+            <span v-if="emailError" class="text-sm text-red-500">{{ emailError }}</span>
+          </UFormGroup>
 
-        <!-- Password Field -->
-        <UFormGroup label="Password">
-          <UInput
-            v-model="password"
-            type="password"
-            placeholder="••••••••"
-            required
-            :disabled="isSubmitting || isLoggingIn"
-            @blur="validatePassword(password)"
-          />
-          <span v-if="passwordError" class="text-sm text-red-500">{{ passwordError }}</span>
-        </UFormGroup>
+          <!-- Password Field -->
+          <UFormGroup label="Password" class="space-y-2">
+            <UInput
+              v-model="password"
+              type="password"
+              placeholder="••••••••"
+              required
+              size="lg"
+              :disabled="isSubmitting || isLoggingIn"
+              @blur="validatePassword(password)"
+            />
+            <span v-if="passwordError" class="text-sm text-red-500">{{ passwordError }}</span>
+          </UFormGroup>
 
-        <!-- Submit Button -->
-        <UButton 
-          type="submit" 
-          block 
-          size="lg"
-          :loading="isSubmitting"
-          :disabled="isSubmitting || isLoggingIn"
-        >
-          Sign in
-        </UButton>
-      </form>
+          <!-- Submit Button -->
+          <UButton 
+            type="submit" 
+            block 
+            size="lg"
+            :loading="isSubmitting"
+            :disabled="isSubmitting || isLoggingIn"
+            class="mt-8"
+          >
+            Sign in
+          </UButton>
+        </form>
+      </div>
 
       <!-- OAuth Divider -->
-      <div class="relative">
+      <div class="relative my-8">
         <div class="absolute inset-0 flex items-center">
           <div class="w-full border-t border-muted" />
         </div>
         <div class="relative flex justify-center text-sm">
-          <span class="px-2 bg-background text-muted-foreground">
+          <span class="px-4 bg-background text-muted-foreground">
             Or continue with
           </span>
         </div>
       </div>
 
       <!-- OAuth Buttons -->
-      <div class="grid grid-cols-1 gap-3">
+      <div class="bg-card/50 backdrop-blur-sm rounded-lg border border-border p-6">
         <UButton
           v-for="provider in providers"
           :key="provider.label"
           :icon="provider.icon"
           :label="provider.label"
-          color="white"
+          color="neutral"
           variant="outline"
           block
+          size="lg"
           :disabled="isSubmitting || isLoggingIn"
           @click="provider.onClick"
         >
@@ -233,7 +239,7 @@ async function onSubmit() {
       </div>
 
       <!-- Signup Link -->
-      <p class="text-center text-sm text-muted-foreground">
+      <p class="text-center text-sm text-muted-foreground mt-6">
         Don't have an account?
         <ULink to="/signup" class="font-semibold text-primary hover:underline">
           Sign up
@@ -241,7 +247,7 @@ async function onSubmit() {
       </p>
 
       <!-- Links Back to Portfolio -->
-      <div class="flex items-center justify-center gap-4 pt-4 border-t border-muted">
+      <div class="flex items-center justify-center gap-4 pt-6 mt-6 border-t border-muted">
         <ULink to="/" class="text-xs text-muted-foreground hover:text-foreground">
           ← Back to home
         </ULink>

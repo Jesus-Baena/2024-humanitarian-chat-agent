@@ -72,12 +72,16 @@
 <script setup lang="ts">
 import useUser from '~/composables/useUser'
 
-const { user, loading, logout } = useUser()
-
+const { logout } = useUser()
+const supabaseUser = useSupabaseUser()
 const config = useRuntimeConfig()
 const supabase = useSupabaseClient()
 
-const handleSignIn = async () => {
+// Use Supabase user as the source of truth
+const user = computed(() => supabaseUser.value)
+const loading = ref(false)
+
+const handleSignIn = () => {
   const authBase = (config.public?.authBase as string) || ''
   
   if (authBase) {
@@ -88,27 +92,8 @@ const handleSignIn = async () => {
     const redirectParam = currentUrl ? `?redirect_to=${encodeURIComponent(currentUrl)}` : ''
     window.location.href = `${authBase.replace(/\/$/, '')}${loginPath}${redirectParam}`
   } else {
-    // Fallback: use Supabase OAuth directly (for development/testing)
-    const redirectTo = `${window.location.origin}/auth/callback`
-    
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          }
-        }
-      })
-      
-      if (error) {
-        console.error('Sign in error:', error)
-      }
-    } catch (err) {
-      console.error('Sign in exception:', err)
-    }
+    // Navigate to local login page
+    navigateTo('/login')
   }
 }
 
@@ -128,7 +113,7 @@ const userInitials = computed(() => {
   const name = user.value.user_metadata?.full_name || user.value.email || 'U'
   return name
     .split(' ')
-    .map(n => n[0])
+    .map((n: string) => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)
