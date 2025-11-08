@@ -75,7 +75,6 @@ import useUser from '~/composables/useUser'
 const { logout } = useUser()
 const supabaseUser = useSupabaseUser()
 const config = useRuntimeConfig()
-const supabase = useSupabaseClient()
 
 // Use Supabase user as the source of truth
 const user = computed(() => supabaseUser.value)

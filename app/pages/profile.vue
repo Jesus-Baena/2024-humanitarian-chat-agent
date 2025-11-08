@@ -6,7 +6,6 @@ definePageMeta({
 const user = useSupabaseUser()
 const supabase = useSupabaseClient()
 const toast = useToast()
-const config = useRuntimeConfig()
 
 useSeoMeta({
   title: 'Profile',
