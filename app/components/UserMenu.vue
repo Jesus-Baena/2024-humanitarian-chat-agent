@@ -73,13 +73,8 @@
 import useUser from '~/composables/useUser'
 import { resolveAuthLinks } from '~/utils/authLinks'
 
-const { logout } = useUser()
-const supabaseUser = useSupabaseUser()
+const { user, loading, logout } = useUser()
 const config = useRuntimeConfig()
-
-// Use Supabase user as the source of truth
-const user = computed(() => supabaseUser.value)
-const loading = ref(false)
 
 const handleSignIn = () => {
   const currentUrl = typeof window !== 'undefined' ? window.location.href : undefined
