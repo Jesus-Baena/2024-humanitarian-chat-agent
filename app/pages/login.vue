@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { resolveAuthLinks } from '~/utils/authLinks'
+
 definePageMeta({
   layout: 'default',
   middleware: [] // Allow login page even when authenticated for re-auth
@@ -15,8 +17,44 @@ const user = useSupabaseUser()
 const route = useRoute()
 const config = useRuntimeConfig()
 
+const usingExternalAuth = computed(() => {
+  const base = (config.public.authBase as string) || ''
+  return base.trim().length > 0
+})
+
+function normalizeRedirectTarget(target: string): string {
+  if (typeof window === 'undefined') {
+    return target
+  }
+  if (!target) {
+    return window.location.origin
+  }
+  if (target.startsWith('http')) {
+    return target
+  }
+  const origin = window.location.origin.replace(/\/$/, '')
+  const formatted = target.startsWith('/') ? target : `/${target}`
+  return `${origin}${formatted}`
+}
+
+const triggerExternalLogin = () => {
+  if (!usingExternalAuth.value || typeof window === 'undefined') {
+    return
+  }
+  const destination = normalizeRedirectTarget(redirectTo.value)
+  const link = resolveAuthLinks(config.public || {}, {
+    currentUrl: destination,
+    redirectParamLogin: 'redirect_to'
+  }).login
+  if (link.startsWith('http')) {
+    window.location.href = link
+  } else {
+    navigateTo(link)
+  }
+}
+
 // Get the base URL for OAuth redirects (production URL in production, local in dev)
-const baseUrl = config.public.siteUrl || window.location.origin
+const baseUrl = config.public.siteUrl || (typeof window !== 'undefined' ? window.location.origin : '')
 
 // Handle redirect_to parameter for cross-domain auth
 // Supports: baena.ai -> chat.baena.ai
@@ -32,6 +70,12 @@ const redirectTo = computed(() => {
   }
   // Default to index page
   return '/'
+})
+
+onMounted(() => {
+  if (usingExternalAuth.value) {
+    triggerExternalLogin()
+  }
 })
 
 // Redirect if already logged in (but allow manual re-auth)
@@ -81,35 +125,40 @@ function validatePassword(value: string) {
 }
 
 // OAuth providers
-const providers = [{
-  label: 'Google',
-  icon: 'i-simple-icons-google',
-  onClick: async () => {
-    try {
-      isLoggingIn.value = true
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectTo.value.startsWith('http') 
-            ? redirectTo.value 
-            : `${baseUrl}/auth/callback?redirectTo=${encodeURIComponent(redirectTo.value)}`
+const providers = usingExternalAuth.value
+  ? []
+  : [{
+      label: 'Google',
+      icon: 'i-simple-icons-google',
+      onClick: async () => {
+        try {
+          isLoggingIn.value = true
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+              redirectTo: redirectTo.value.startsWith('http') 
+                ? redirectTo.value 
+                : `${baseUrl}/auth/callback?redirectTo=${encodeURIComponent(redirectTo.value)}`
+            }
+          })
+          if (error) throw error
+        } catch (error: unknown) {
+          isLoggingIn.value = false
+          toast.add({
+            title: 'Error',
+            description: error instanceof Error ? error.message : 'Failed to sign in with Google'
+          })
         }
-      })
-      if (error) throw error
-    } catch (error: unknown) {
-      isLoggingIn.value = false
-      toast.add({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to sign in with Google'
-      })
-    }
-  }
-}]
+      }
+    }]
 
 // Validation schema
 const isSubmitting = ref(false)
 
 async function onSubmit() {
+  if (usingExternalAuth.value) {
+    return
+  }
   // Validate form
   if (!validateEmail(email.value) || !validatePassword(password.value)) {
     return
@@ -152,6 +201,34 @@ async function onSubmit() {
 <template>
   <div class="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-b from-background to-muted/30">
     <div class="w-full max-w-md space-y-8">
+      <template v-if="usingExternalAuth">
+        <div class="text-center">
+          <NuxtLink to="/" class="inline-block mb-4">
+            <Logo class="h-8 w-auto" />
+          </NuxtLink>
+          <h1 class="text-3xl font-bold tracking-tight">Continue to sign in</h1>
+          <p class="mt-2 text-sm text-muted-foreground">
+            Redirecting you to the portfolio authentication page.
+          </p>
+        </div>
+
+        <div class="bg-card/50 backdrop-blur-sm rounded-lg border border-border p-6 text-center space-y-4">
+          <UIcon name="i-lucide-loader-2" class="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+          <p class="text-sm text-muted-foreground">
+            If nothing happens, use the button below to continue.
+          </p>
+          <UButton
+            color="primary"
+            block
+            size="lg"
+            @click="triggerExternalLogin"
+          >
+            Continue to portfolio login
+          </UButton>
+        </div>
+      </template>
+
+      <template v-else>
       <!-- Logo -->
       <div class="text-center">
         <NuxtLink to="/" class="inline-block mb-4">
@@ -256,6 +333,7 @@ async function onSubmit() {
           Visit portfolio ↗
         </ULink>
       </div>
+      </template>
     </div>
   </div>
 </template>

@@ -1,3 +1,5 @@
+import { resolveAuthLinks } from '~/utils/authLinks'
+
 interface User {
   id: string
   email?: string
@@ -62,20 +64,18 @@ const useUser = () => {
   const logout = async () => {
     const { public: publicCfg } = useRuntimeConfig()
     const apiBase: string = (publicCfg.apiBase as string) || ''
-    const authBase: string = (publicCfg.authBase as string) || ''
-    const logoutPath: string = (publicCfg.logoutPath as string) || '/logout'
     const current = typeof window !== 'undefined' ? window.location.href : ''
-    // Prefer logging out via main app to clear shared cookies and redirect back to chat
-    if (authBase) {
-      const qs = current ? `?redirectTo=${encodeURIComponent(current)}` : ''
-      window.location.href = `${authBase.replace(/\/$/, '')}${logoutPath}${qs}`
+    const links = resolveAuthLinks(publicCfg || {}, {
+      currentUrl: current,
+      redirectParamLogout: 'redirectTo'
+    })
+    if (links.logout.startsWith('http')) {
+      window.location.href = links.logout
       return
     }
-    // Fallback: use this app's logout endpoint
-    const localLogout: string = apiBase
-      ? `${apiBase.replace(/\/$/, '')}/auth/logout`
-      : '/auth/logout'
-    window.location.href = localLogout
+    const base = apiBase ? apiBase.replace(/\/$/, '') : ''
+    const path = links.logout.startsWith('/') ? links.logout : `/${links.logout}`
+    window.location.href = `${base}${path}`
   }
 
   return {

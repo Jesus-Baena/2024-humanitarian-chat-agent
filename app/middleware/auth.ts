@@ -1,8 +1,24 @@
+import { resolveAuthLinks } from '~/utils/authLinks'
+
 export default defineNuxtRouteMiddleware(() => {
   const user = useSupabaseUser()
 
-  // If there's no user and we're trying to access a protected route, redirect to login
-  if (!user.value) {
-    return navigateTo('/login')
+  if (user.value) {
+    return
   }
+
+  const config = useRuntimeConfig()
+  const currentUrl = process.server
+    ? useRequestURL().href
+    : typeof window !== 'undefined'
+      ? window.location.href
+      : undefined
+  const links = resolveAuthLinks(config.public || {}, {
+    currentUrl,
+    redirectParamLogin: 'redirect_to'
+  })
+
+  return navigateTo(links.login, {
+    external: links.login.startsWith('http')
+  })
 })

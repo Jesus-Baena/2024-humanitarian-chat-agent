@@ -71,6 +71,7 @@
 
 <script setup lang="ts">
 import useUser from '~/composables/useUser'
+import { resolveAuthLinks } from '~/utils/authLinks'
 
 const { logout } = useUser()
 const supabaseUser = useSupabaseUser()
@@ -81,26 +82,19 @@ const user = computed(() => supabaseUser.value)
 const loading = ref(false)
 
 const handleSignIn = () => {
-  const authBase = (config.public?.authBase as string) || ''
-  
-  if (authBase) {
-    // Redirect to main portfolio login with proper redirect_to parameter
-    const loginPath = (config.public?.loginPath as string) || '/login'
-    const currentUrl = typeof window !== 'undefined' ? window.location.href : ''
-    // Use redirect_to (underscore) to match main portfolio's expected parameter
-    const redirectParam = currentUrl ? `?redirect_to=${encodeURIComponent(currentUrl)}` : ''
-    window.location.href = `${authBase.replace(/\/$/, '')}${loginPath}${redirectParam}`
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : undefined
+  const links = resolveAuthLinks(config.public || {}, {
+    currentUrl,
+    redirectParamLogin: 'redirect_to'
+  })
+  if (links.login.startsWith('http')) {
+    window.location.href = links.login
   } else {
-    // Navigate to local login page
-    navigateTo('/login')
+    navigateTo(links.login)
   }
 }
 
-const profileUrl = computed(() => {
-  const base = (config.public?.authBase as string) || ''
-  const path = '/profile'
-  return base ? `${base.replace(/\/$/, '')}${path}` : path
-})
+const profileUrl = computed(() => resolveAuthLinks(config.public || {}).profile)
 
 const displayName = computed(() => {
   if (!user.value) return ''
