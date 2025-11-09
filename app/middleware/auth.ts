@@ -8,7 +8,7 @@ export default defineNuxtRouteMiddleware(() => {
   }
 
   const config = useRuntimeConfig()
-  const currentUrl = process.server
+  const currentUrl = import.meta.server
     ? useRequestURL().href
     : typeof window !== 'undefined'
       ? window.location.href
