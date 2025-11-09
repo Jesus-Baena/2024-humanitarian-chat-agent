@@ -7,6 +7,14 @@ import type { ChatMessage } from '~/types'
 export function useAssistants() {
   // Runtime config (nuxt.config.ts should expose runtimeConfig.public.flowiseUrl)
   const runtimeConfig = useRuntimeConfig()
+  
+  // DEBUG: Log what we actually have in runtime config
+  console.log('[useAssistants] DEBUG - runtimeConfig.public:', {
+    flowiseUrl: runtimeConfig.public?.flowiseUrl,
+    flowiseApiKey: runtimeConfig.public?.flowiseApiKey ? '***SET***' : 'NOT SET',
+    allKeys: Object.keys(runtimeConfig.public || {})
+  })
+  
   const viteEnv = (import.meta as unknown as { env?: Record<string, string> })
     .env
   const flowiseUrl: string | undefined
@@ -20,6 +28,11 @@ export function useAssistants() {
     = (runtimeConfig.public?.flowiseApiKey as string | undefined)
       || viteEnv?.NUXT_PUBLIC_FLOWISE_API_KEY
       || viteEnv?.VITE_FLOWISE_API_KEY
+
+  console.log('[useAssistants] DEBUG - Final values:', {
+    flowiseUrl: flowiseUrl || 'NOT SET',
+    flowiseApiKey: flowiseApiKey ? '***SET***' : 'NOT SET'
+  })
 
   if (!flowiseUrl) {
     // We only warn once in dev mode.
