@@ -1,36 +1,20 @@
 /**
- * Custom Supabase client configuration for cross-subdomain authentication.
+ * Cross-subdomain cookie domain patcher for Supabase authentication.
  * 
- * This plugin ensures that Supabase auth cookies are set with the correct domain
- * (.baena.ai) so they can be shared between baena.ai and chat.baena.ai.
- * 
- * The @nuxtjs/supabase module doesn't support dynamic cookie domain configuration,
- * so we override the cookie storage behavior here.
+ * This plugin intercepts cookie-setting operations and ensures that Supabase
+ * auth cookies are set with the correct domain (.baena.ai) so they can be
+ * shared between baena.ai and chat.baena.ai.
  */
-
-import { createBrowserClient } from '@supabase/ssr'
 
 export default defineNuxtPlugin({
   name: 'supabase-cookie-domain',
-  enforce: 'post', // Run after the @nuxtjs/supabase plugin
   setup() {
-    const config = useRuntimeConfig()
-    const supabaseUrl = config.public.supabaseUrl as string
-    const supabaseKey = config.public.supabaseKey as string
-
-    if (!supabaseUrl || !supabaseKey) {
-      console.warn('[supabase-cookie-domain] Missing Supabase credentials')
-      return
-    }
+    if (import.meta.server) return
 
     // Compute the cookie domain based on the current hostname
     const computeCookieDomain = () => {
       if (import.meta.env.DEV) {
         return undefined // localhost doesn't support domain attribute
-      }
-
-      if (typeof window === 'undefined') {
-        return undefined
       }
 
       const hostname = window.location.hostname
@@ -46,63 +30,40 @@ export default defineNuxtPlugin({
 
     const cookieDomain = computeCookieDomain()
 
-    // Only apply custom storage if we have a cookie domain (production)
+    // Only patch in production with a valid cookie domain
     if (!cookieDomain) {
       return
     }
 
-    console.log('[supabase-cookie-domain] Setting cookie domain:', cookieDomain)
+    console.log('[supabase-cookie-domain] Patching cookies with domain:', cookieDomain)
 
-    // Create a custom storage that sets cookies with the correct domain
-    const customCookieStorage = {
-      getItem: (key: string): string | null => {
-        if (typeof document === 'undefined') return null
-        const cookies = document.cookie.split('; ')
-        const cookie = cookies.find(c => c.startsWith(`${key}=`))
-        return cookie ? (cookie.split('=')[1] ?? null) : null
-      },
-      setItem: (key: string, value: string) => {
-        if (typeof document === 'undefined') return
+    // Intercept the cookie setter to add domain attribute
+    const originalCookieDescriptor = Object.getOwnPropertyDescriptor(Document.prototype, 'cookie')
+    const originalCookieSetter = originalCookieDescriptor?.set
 
-        const maxAge = 60 * 60 * 8 // 8 hours (matching server config)
-        const secure = window.location.protocol === 'https:'
-        
-        document.cookie = `${key}=${value}; path=/; domain=${cookieDomain}; max-age=${maxAge}; SameSite=Lax${secure ? '; Secure' : ''}`
-      },
-      removeItem: (key: string) => {
-        if (typeof document === 'undefined') return
-        document.cookie = `${key}=; path=/; domain=${cookieDomain}; max-age=0`
-      }
-    }
+    if (originalCookieSetter) {
+      Object.defineProperty(Document.prototype, 'cookie', {
+        ...originalCookieDescriptor,
+        set(cookieString: string) {
+          // Check if this is a Supabase auth cookie
+          const isSupabaseCookie = cookieString.includes('sb-') && cookieString.includes('-auth-token')
+          
+          if (isSupabaseCookie && !cookieString.includes('domain=')) {
+            // Add the domain attribute if it's missing
+            const hasPath = cookieString.includes('path=')
+            const separator = hasPath ? '; ' : ''
+            const modifiedCookie = cookieString + `${separator}domain=${cookieDomain}`
+            
+            console.log('[supabase-cookie-domain] Patched cookie:', modifiedCookie.substring(0, 100) + '...')
+            return originalCookieSetter.call(this, modifiedCookie)
+          }
 
-    // Create a new Supabase client with custom cookie storage
-    const client = createBrowserClient(supabaseUrl, supabaseKey, {
-      auth: {
-        storage: customCookieStorage,
-        flowType: 'pkce',
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        persistSession: true
-      },
-      cookieOptions: {
-        domain: cookieDomain,
-        path: '/',
-        sameSite: 'lax',
-        secure: window.location.protocol === 'https:'
-      }
-    })
+          return originalCookieSetter.call(this, cookieString)
+        }
+      })
 
-    // Replace the Nuxt-provided Supabase client
-    const nuxtApp = useNuxtApp()
-    if (nuxtApp.$supabase) {
-      nuxtApp.$supabase = client
-      console.log('[supabase-cookie-domain] Replaced Supabase client with custom storage')
-    }
-
-    return {
-      provide: {
-        supabase: client
-      }
+      console.log('[supabase-cookie-domain] Cookie setter patched successfully')
     }
   }
 })
+
