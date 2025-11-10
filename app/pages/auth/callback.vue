@@ -10,6 +10,7 @@
 <script setup lang="ts">
 const supabase = useSupabaseClient()
 const router = useRouter()
+const toast = useToast()
 
 onMounted(async () => {
   try {
@@ -23,21 +24,44 @@ onMounted(async () => {
       
       if (error) {
         console.error('Error exchanging code for session:', error)
+        toast.add({
+          title: 'Authentication Error',
+          description: 'Failed to complete sign in. Please try again.',
+          color: 'error'
+        })
         await router.push('/login?error=auth_failed')
         return
       }
       
       console.log('Successfully authenticated:', data.user?.email)
+      
+      // Redirect to home or the original destination
+      const redirectTo = params.get('redirectTo') || '/'
+      await router.push(redirectTo)
     } else {
+      // No code found - might be a direct navigation or error
       console.warn('No authorization code found in callback URL')
+      
+      // Check if there's already a valid session
+      const { data: { session }, error } = await supabase.auth.getSession()
+      
+      if (session && !error) {
+        // Session exists, redirect to home
+        const redirectTo = params.get('redirectTo') || '/'
+        await router.push(redirectTo)
+      } else {
+        // No session and no code - redirect to login
+        await router.push('/login')
+      }
     }
-    
-    // Redirect to home or the original destination
-    const redirectTo = params.get('redirectTo') || '/'
-    await router.push(redirectTo)
   } catch (error) {
     console.error('Auth callback error:', error)
-    await router.push('/login?error=auth_failed')
+    toast.add({
+      title: 'Error',
+      description: 'An unexpected error occurred during authentication.',
+      color: 'error'
+    })
+    await router.push('/login?error=unexpected')
   }
 })
 </script>

@@ -104,17 +104,38 @@ export function useChat(chatId: string) {
       try {
         parsed = JSON.parse(parsed)
       } catch {
+        // Return string as-is if it's not JSON
         return parsed as string
       }
     }
     if (typeof parsed === 'object' && parsed !== null) {
       const data = parsed as Record<string, unknown>
+      // Handle SSE event format
       if (data.event === 'token' && typeof data.data === 'string') {
         return data.data
       }
-      const text = (data.text as string) || (data.data as string) || (data.token as string) || (data.chunk as string) || (data.content as string)
+      // Try various common field names for streaming text
+      const text = (data.text as string) 
+        || (data.data as string) 
+        || (data.token as string) 
+        || (data.chunk as string) 
+        || (data.content as string)
+        || (data.delta as string)
       if (typeof text === 'string') {
         return text
+      }
+      // Handle nested data structures
+      if (data.choices && Array.isArray(data.choices) && data.choices[0]) {
+        const choice = data.choices[0] as Record<string, unknown>
+        if (choice.delta && typeof choice.delta === 'object') {
+          const delta = choice.delta as Record<string, unknown>
+          if (typeof delta.content === 'string') {
+            return delta.content
+          }
+        }
+        if (typeof choice.text === 'string') {
+          return choice.text
+        }
       }
     }
     return undefined
@@ -131,13 +152,25 @@ export function useChat(chatId: string) {
 
   const normalizeContent = (raw: string): string => {
     let out = raw
+      // Remove trailing [DONE] markers
       .replace(/(?:message\s*)?(\[?DONE\]?)[\s]*$/gi, '')
+      // Remove duplicate words (case-sensitive, capitalized words)
       .replace(/\b([A-Z][a-z]{1,30})(\1)\b/g, '$1')
+      // Remove duplicate words separated by spaces
       .replace(/\b(\w+)(?:\s+\1){1,2}\b/g, '$1')
+      // Remove duplicates at sentence boundaries
       .replace(/(^|[.!?]\s+)([A-Z][a-z]{1,30})\s+\2\b/g, '$1$2')
-    out = out.replace(/\b([A-Z]{2,6})\1(?=[A-Z])/g, '$1')
-      .replace(/\b([A-Z]{2,6})\s+\1\b/g, '$1')
-      .replace(/^([A-Z]{2,6})\1([A-Z][A-Za-z]{2,})/, '$1$2')
+    
+    // Enhanced acronym deduplication
+    out = out
+      // Remove internal duplicates within acronyms (ECHECHO -> ECHO, DGDG -> DG)
+      // This must come first to handle patterns like ECHECHO
+      .replace(/\b([A-Z]{2,})(\1)+\b/g, '$1')
+      // Remove duplicate acronyms separated by space (DG DG -> DG)
+      .replace(/\b([A-Z]{2,6})\s+\1\b/gi, '$1')
+      // Remove duplicate at start of line followed by word (DGDG ECHO -> DG ECHO)
+      .replace(/^([A-Z]{2,6})\1+(\s+[A-Z])/m, '$1$2')
+    
     return out.trimEnd()
   }
 
@@ -211,6 +244,7 @@ export function useChat(chatId: string) {
     let accumulated = ''
     let echoDone = lastUser === ''
     let dataLines: string[] = []
+    let lastTokenSeen = '' // Track last token to prevent duplicate accumulation
 
     const flush = () => {
       if (!dataLines.length) return
@@ -226,18 +260,38 @@ export function useChat(chatId: string) {
         text = extractStreamingText(raw)
       }
       if (!text || assistantIndex === -1) return
+      
+      // Prevent duplicate token accumulation
+      if (text === lastTokenSeen && text.length < 50) {
+        // Skip if it's the exact same short token as last time
+        if (import.meta.dev) console.debug('[useChat] Skipping duplicate token:', text)
+        return
+      }
+      lastTokenSeen = text
+      
       const current = messages.value[assistantIndex]
       if (!current) return
+      
+      // Check if this text would create a duplicate at the end
+      const wouldBeDuplicate = accumulated.endsWith(text) && text.length > 5
+      if (wouldBeDuplicate) {
+        // Skip this token as it's a duplicate
+        if (import.meta.dev) console.debug('[useChat] Skipping duplicate at end:', text)
+        return
+      }
+      
       accumulated += text
       if (!echoDone && lastUser) {
         if (accumulated.startsWith(lastUser + lastUser)) {
           accumulated = accumulated.slice(lastUser.length)
           echoDone = true
+          if (import.meta.dev) console.debug('[useChat] Removed double echo')
         } else if (accumulated.startsWith(lastUser)) {
           const boundary = accumulated[lastUser.length]
           if (boundary && /[\s.!?:;,'")\]]/.test(boundary)) {
             accumulated = accumulated.slice(lastUser.length).trimStart()
             echoDone = true
+            if (import.meta.dev) console.debug('[useChat] Removed echo with boundary')
           } else if (accumulated.length - lastUser.length > 120) {
             echoDone = true
           }

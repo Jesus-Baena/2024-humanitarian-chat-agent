@@ -17,6 +17,22 @@ const authBase = process.env.NUXT_PUBLIC_AUTH_BASE || ''
 const loginPath = process.env.NUXT_PUBLIC_LOGIN_PATH || '/login'
 const logoutPath = process.env.NUXT_PUBLIC_LOGOUT_PATH || '/logout'
 
+// Compute cookie domain to share auth across subdomains (e.g., baena.ai and chat.baena.ai)
+// In production, use parent domain (.baena.ai); in dev, leave undefined for localhost
+const computeCookieDomain = () => {
+  if (process.env.NODE_ENV === 'development') {
+    return undefined // localhost doesn't support domain attribute
+  }
+  const siteUrlParsed = new URL(siteUrl)
+  const hostname = siteUrlParsed.hostname
+  const parts = hostname.split('.')
+  // For chat.baena.ai -> .baena.ai
+  if (parts.length >= 2) {
+    return `.${parts.slice(-2).join('.')}`
+  }
+  return undefined
+}
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   modules: [
@@ -29,6 +45,12 @@ export default defineNuxtConfig({
         login: '/login',
         callback: '/auth/callback',
         exclude: ['/', '/login', '/signup', '/chat/*', '/auth/callback']
+      },
+      cookieOptions: {
+        maxAge: 60 * 60 * 8, // 8 hours
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        domain: computeCookieDomain()
       }
     }]
   ],
@@ -72,16 +94,6 @@ export default defineNuxtConfig({
   },
 
   compatibilityDate: '2024-07-11',
-
-  supabase: {
-    url: supabaseUrl,
-    key: supabaseKey,
-    redirectOptions: {
-      login: '/login',
-      callback: '/auth/callback',
-      exclude: ['/login', '/signup', '/auth/callback']
-    }
-  },
 
   nitro: {
     experimental: {
