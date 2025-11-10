@@ -38,9 +38,20 @@ See **[SECRETS_SETUP.md](SECRETS_SETUP.md)** for complete instructions.
 
 ## Docker Build
 
+**For local development (without Flowise):**
 ```bash
-docker build -t chat-app .
+docker build --build-arg SKIP_FLOWISE_VALIDATION=true -t chat-app .
 ```
+
+**For production (requires all secrets):**
+```bash
+docker build \
+  --build-arg NUXT_PUBLIC_FLOWISE_URL="<your-flowise-url>" \
+  --build-arg NUXT_PUBLIC_FLOWISE_API_KEY="<your-api-key>" \
+  -t chat-app .
+```
+
+**Note:** Production builds via GitHub Actions automatically include all required secrets.
 
 ## Environment Variables
 
