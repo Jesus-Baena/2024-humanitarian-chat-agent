@@ -12,6 +12,6 @@ const chatId = computed(() => route.params.id as string)
 const initialMessage = computed(() => route.query.message as string | undefined)
 
 useHead({
-  title: `Chat ${chatId.value} - Humanitarian Chat`
+  title: 'baena.ai - Chat'
 })
 </script>
