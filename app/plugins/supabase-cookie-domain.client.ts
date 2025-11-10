@@ -93,10 +93,8 @@ export default defineNuxtPlugin({
     })
 
     // Replace the Nuxt-provided Supabase client
-    // @ts-ignore - nuxtApp.$supabase exists but isn't typed
     const nuxtApp = useNuxtApp()
     if (nuxtApp.$supabase) {
-      // @ts-ignore
       nuxtApp.$supabase = client
       console.log('[supabase-cookie-domain] Replaced Supabase client with custom storage')
     }
