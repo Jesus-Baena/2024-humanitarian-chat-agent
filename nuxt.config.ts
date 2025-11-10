@@ -31,6 +31,13 @@ export default defineNuxtConfig({
         login: '/login',
         callback: '/auth/callback',
         exclude: ['/', '/login', '/signup', '/chat/*', '/auth/callback']
+      },
+      cookieOptions: {
+        maxAge: 60 * 60 * 8, // 8 hours
+        sameSite: 'lax',
+        secure: true,
+        // Set domain for production - this will be .baena.ai
+        domain: process.env.NODE_ENV === 'production' ? '.baena.ai' : undefined
       }
     }]
   ],
