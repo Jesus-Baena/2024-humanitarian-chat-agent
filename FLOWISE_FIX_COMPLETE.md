@@ -20,16 +20,16 @@ Go to: **https://github.com/Jesus-Baena/chat-humanitarian-agent/settings/secrets
 
 Click **"New repository secret"** and add each of the following:
 
-| Secret Name | Value |
-|-------------|-------|
-| `NUXT_UI_PRO_LICENSE` | `8DD50442-8ABE-40A3-A1C5-E05515D4DEC3` |
-| `NUXT_PUBLIC_SITE_URL` | `https://chat.baena.ai` |
-| `NUXT_PUBLIC_SUPABASE_URL` | `https://qecdwuwkxgwkpopmdewl.supabase.co` |
-| `NUXT_PUBLIC_SUPABASE_KEY` | `sb_publishable_1bD243SmZOm1oXJCcMkZrg_qb6DpeMI` |
-| `NUXT_PUBLIC_FLOWISE_URL` | `https://flowise.baena.site/api/v1/prediction/40718af9-e9bd-47d9-a57b-009cb26f8fe3` |
-| `NUXT_PUBLIC_FLOWISE_API_KEY` | `FO5JgBFwXMPQDE_XrgDn8FSYpGbgtyeZ2h7YlJd-Skk` |
+| Secret Name | Where to Get Value |
+|-------------|-------------------|
+| `NUXT_UI_PRO_LICENSE` | Your Nuxt UI Pro license key |
+| `NUXT_PUBLIC_SITE_URL` | Your production URL (e.g., `https://chat.example.com`) |
+| `NUXT_PUBLIC_SUPABASE_URL` | Supabase Dashboard → Settings → API → Project URL |
+| `NUXT_PUBLIC_SUPABASE_KEY` | Supabase Dashboard → Settings → API → anon/public key |
+| `NUXT_PUBLIC_FLOWISE_URL` | Your Flowise instance → Prediction URL |
+| `NUXT_PUBLIC_FLOWISE_API_KEY` | Your Flowise instance → Settings → API Keys |
 
-**Important**: Copy the exact values shown above (or run `./fix-flowise-secrets.sh` to see them)
+**Important**: Get values from your local `.env` file or the respective service dashboards
 
 ### Step 2: Trigger a New Build
 

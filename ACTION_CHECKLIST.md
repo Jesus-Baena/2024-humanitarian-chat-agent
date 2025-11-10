@@ -38,22 +38,13 @@ Runtime (Docker Swarm)       →  Too late, code already compiled
 Click **"New repository secret"** for each missing item:
 
 **Secret:** `NUXT_PUBLIC_FLOWISE_URL`  
-**Value:**
-```
-https://flowise.baena.site/api/v1/prediction/40718af9-e9bd-47d9-a57b-009cb26f8fe3
-```
+**Value:** Get from your Flowise instance (Prediction URL)
 
 **Secret:** `NUXT_PUBLIC_FLOWISE_API_KEY`  
-**Value:**
-```
-FO5JgBFwXMPQDE_XrgDn8FSYpGbgtyeZ2h7YlJd-Skk
-```
+**Value:** Get from your Flowise instance (Settings → API Keys)
 
 **Secret:** `NUXT_PUBLIC_SUPABASE_KEY`  
-**Value:**
-```
-sb_publishable_1bD243SmZOm1oXJCcMkZrg_qb6DpeMI
-```
+**Value:** Get from Supabase Dashboard (Settings → API → anon/public key)
 
 ### ✅ Step 3: Trigger New Build
 
@@ -160,8 +151,8 @@ https://chat.baena.ai/chat/new
 Your `docker-compose.prod.yml` has:
 ```yaml
 environment:
-  - NUXT_PUBLIC_FLOWISE_URL=https://flowise.baena.site/...
-  - NUXT_PUBLIC_FLOWISE_API_KEY=FO5JgBFwXMPQDE_...
+  - NUXT_PUBLIC_FLOWISE_URL=https://flowise.example.com/...
+  - NUXT_PUBLIC_FLOWISE_API_KEY=<your-key>
 ```
 
 **This sets RUNTIME environment variables**, but:

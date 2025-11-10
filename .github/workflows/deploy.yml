@@ -47,9 +47,13 @@ jobs:
           echo "NUXT_UI_PRO_LICENSE: ${{ secrets.NUXT_UI_PRO_LICENSE != '' && '✅ Set' || '❌ Missing' }}"
           echo "NUXT_PUBLIC_SITE_URL: ${{ secrets.NUXT_PUBLIC_SITE_URL != '' && '✅ Set' || '❌ Missing' }}"
           echo "NUXT_PUBLIC_SUPABASE_URL: ${{ secrets.NUXT_PUBLIC_SUPABASE_URL != '' && '✅ Set' || '❌ Missing' }}"
-          echo "NUXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NUXT_PUBLIC_SUPABASE_ANON_KEY != '' && '✅ Set' || '❌ Missing' }}"
+          echo "NUXT_PUBLIC_SUPABASE_KEY (new): ${{ secrets.NUXT_PUBLIC_SUPABASE_KEY != '' && '✅ Set' || '❌ Missing' }}"
+          echo "NUXT_PUBLIC_SUPABASE_ANON_KEY (legacy): ${{ secrets.NUXT_PUBLIC_SUPABASE_ANON_KEY != '' && '✅ Set' || '❌ Missing' }}"
           echo "NUXT_PUBLIC_FLOWISE_URL: ${{ secrets.NUXT_PUBLIC_FLOWISE_URL != '' && '✅ Set' || '❌ Missing' }}"
           echo "NUXT_PUBLIC_FLOWISE_API_KEY: ${{ secrets.NUXT_PUBLIC_FLOWISE_API_KEY != '' && '✅ Set' || '❌ Missing' }}"
+          echo ""
+          echo "⚠️  CRITICAL: If FLOWISE secrets show ❌ Missing, your build will fail!"
+          echo "📖 See SECRETS_SETUP.md for complete setup instructions"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -65,7 +69,7 @@ jobs:
             NUXT_UI_PRO_LICENSE=${{ secrets.NUXT_UI_PRO_LICENSE }}
             NUXT_PUBLIC_SITE_URL=${{ secrets.NUXT_PUBLIC_SITE_URL }}
             NUXT_PUBLIC_SUPABASE_URL=${{ secrets.NUXT_PUBLIC_SUPABASE_URL }}
-            NUXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NUXT_PUBLIC_SUPABASE_ANON_KEY }}
+            NUXT_PUBLIC_SUPABASE_KEY=${{ secrets.NUXT_PUBLIC_SUPABASE_KEY || secrets.NUXT_PUBLIC_SUPABASE_ANON_KEY }}
             NUXT_PUBLIC_FLOWISE_URL=${{ secrets.NUXT_PUBLIC_FLOWISE_URL }}
             NUXT_PUBLIC_FLOWISE_API_KEY=${{ secrets.NUXT_PUBLIC_FLOWISE_API_KEY }}
 

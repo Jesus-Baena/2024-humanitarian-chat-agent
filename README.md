@@ -2,6 +2,14 @@
 
 A Nuxt 4 application for humanitarian assistance with AI-powered chat functionality.
 
+## 🚨 FIRST TIME SETUP - REQUIRED
+
+**Before deploying to production, you MUST configure GitHub Secrets.**
+
+See **[SECRETS_SETUP.md](SECRETS_SETUP.md)** for complete instructions.
+
+**Skipping this will cause: `"No completion backend configured"` error in production.**
+
 ## Tech Stack
 
 - **Framework**: Nuxt 4.0.3
@@ -40,16 +48,25 @@ See `.env.example` for required configuration.
 
 ### Critical Environment Variables
 
-For production deployments, ensure these client-side variables are set:
+**⚠️ PRODUCTION DEPLOYMENT REQUIRES GITHUB SECRETS**
 
-- `NUXT_PUBLIC_FLOWISE_URL` - Flowise API endpoint
+For the application to work in production, you MUST configure GitHub Secrets. 
+See **[SECRETS_SETUP.md](SECRETS_SETUP.md)** for step-by-step instructions.
+
+Required secrets:
+- `NUXT_PUBLIC_FLOWISE_URL` - Flowise API endpoint (**CRITICAL** - build fails if missing)
 - `NUXT_PUBLIC_FLOWISE_API_KEY` - Flowise API key
 - `NUXT_PUBLIC_SUPABASE_URL` - Supabase project URL
-- `NUXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase publishable key
+- `NUXT_PUBLIC_SUPABASE_KEY` - Supabase publishable key
 
-**Note**: `NUXT_PUBLIC_*` variables must be set both at **build time** (GitHub Actions) and **runtime** (Docker service) for the application to work correctly.
+**Why?** `NUXT_PUBLIC_*` variables are baked into the JavaScript bundle at BUILD time in GitHub Actions, 
+not at runtime. Docker Swarm secrets/env vars alone are NOT sufficient.
 
 ## Production Deployment
+
+### Prerequisites
+
+**⚠️ BEFORE FIRST DEPLOYMENT:** Configure GitHub Secrets (see [SECRETS_SETUP.md](SECRETS_SETUP.md))
 
 ### Quick Deploy
 
@@ -59,13 +76,13 @@ On the Docker Swarm manager:
 ./deploy.sh
 ```
 
-### Emergency Fix
+### Troubleshooting
 
-If chat completions fail with "No completion backend configured":
+**"No completion backend configured" error?**
 
-```bash
-./emergency-deploy.sh
-```
+1. **Check GitHub Secrets:** See [SECRETS_SETUP.md](SECRETS_SETUP.md)
+2. **Verify build logs:** Check GitHub Actions for "Verify build arguments" step
+3. **Emergency fix:** Run `./emergency-deploy.sh` (but fix GitHub Secrets after!)
 
 ### Full Documentation
 
@@ -73,7 +90,7 @@ See [Production Deployment Guide](docs/guides/production-deployment.md) for:
 - Complete deployment procedures
 - GitHub Actions setup
 - Environment variable configuration
-- Troubleshooting steps
+- Advanced troubleshooting
 
 ## License
 
