@@ -40,6 +40,13 @@ jobs:
             type=ref,event=branch
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
+      
+      - name: Create cache key from build args
+        id: cache-key
+        run: |
+          # Create a hash of critical build args to use as cache key
+          # This ensures cache is invalidated when secrets change
+          echo "hash=$(echo '${{ secrets.NUXT_PUBLIC_FLOWISE_URL }}${{ secrets.NUXT_PUBLIC_FLOWISE_API_KEY }}' | sha256sum | cut -d' ' -f1 | cut -c1-8)" >> $GITHUB_OUTPUT
 
       - name: Verify build arguments (diagnostic)
         run: |
@@ -77,9 +84,12 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Use cache key that includes hash of build args to ensure proper invalidation
+          cache-from: type=gha,scope=build-${{ steps.cache-key.outputs.hash }}
+          cache-to: type=gha,mode=max,scope=build-${{ steps.cache-key.outputs.hash }}
           platforms: linux/amd64
+          # CRITICAL: Build args must be set BEFORE context is cached
+          # Changes to these args will invalidate the cache and force a rebuild
           build-args: |
             NUXT_UI_PRO_LICENSE=${{ secrets.NUXT_UI_PRO_LICENSE }}
             NUXT_PUBLIC_SITE_URL=${{ secrets.NUXT_PUBLIC_SITE_URL }}
@@ -87,6 +97,8 @@ jobs:
             NUXT_PUBLIC_SUPABASE_KEY=${{ secrets.NUXT_PUBLIC_SUPABASE_KEY || secrets.NUXT_PUBLIC_SUPABASE_ANON_KEY }}
             NUXT_PUBLIC_FLOWISE_URL=${{ secrets.NUXT_PUBLIC_FLOWISE_URL }}
             NUXT_PUBLIC_FLOWISE_API_KEY=${{ secrets.NUXT_PUBLIC_FLOWISE_API_KEY }}
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+          # NOTE: Cache scope includes hash of secrets, so changing secrets creates new cache
 
       - name: Build Summary
         if: success()
