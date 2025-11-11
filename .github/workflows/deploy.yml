@@ -54,6 +54,21 @@ jobs:
           echo ""
           echo "⚠️  CRITICAL: If FLOWISE secrets show ❌ Missing, your build will fail!"
           echo "📖 See SECRETS_SETUP.md for complete setup instructions"
+          
+          # Fail the build if critical secrets are missing
+          if [ -z "${{ secrets.NUXT_PUBLIC_FLOWISE_URL }}" ]; then
+            echo "❌ ERROR: NUXT_PUBLIC_FLOWISE_URL is not set!"
+            echo "Go to: https://github.com/Jesus-Baena/chat-humanitarian-agent/settings/secrets/actions"
+            echo "And add the secret with value: https://flowise.baena.site/api/v1/prediction/40718af9-e9bd-47d9-a57b-009cb26f8fe3"
+            exit 1
+          fi
+          
+          if [ -z "${{ secrets.NUXT_PUBLIC_FLOWISE_API_KEY }}" ]; then
+            echo "❌ ERROR: NUXT_PUBLIC_FLOWISE_API_KEY is not set!"
+            echo "Go to: https://github.com/Jesus-Baena/chat-humanitarian-agent/settings/secrets/actions"
+            echo "And add the secret with your Flowise API key"
+            exit 1
+          fi
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
