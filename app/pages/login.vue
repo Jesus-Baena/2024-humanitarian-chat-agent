@@ -144,9 +144,20 @@ const providers = usingExternalAuth.value
           if (error) throw error
         } catch (error: unknown) {
           isLoggingIn.value = false
+          
+          // Enhanced error handling for OAuth
+          let errorMessage = 'Failed to sign in with Google'
+          if (error instanceof Error) {
+            if (error.message.includes('rate limit') || error.message.includes('429')) {
+              errorMessage = 'Too many authentication attempts. Please wait a few minutes and try again.'
+            } else {
+              errorMessage = error.message
+            }
+          }
+          
           toast.add({
             title: 'Error',
-            description: error instanceof Error ? error.message : 'Failed to sign in with Google'
+            description: errorMessage
           })
         }
       }
@@ -188,9 +199,24 @@ async function onSubmit() {
     }
   } catch (error: unknown) {
     isLoggingIn.value = false
+    
+    // Enhanced error handling for rate limits and common auth errors
+    let errorMessage = 'Failed to sign in'
+    if (error instanceof Error) {
+      if (error.message.includes('rate limit') || error.message.includes('429')) {
+        errorMessage = 'Too many login attempts. Please wait a few minutes and try again.'
+      } else if (error.message.includes('Invalid login credentials')) {
+        errorMessage = 'Invalid email or password'
+      } else if (error.message.includes('Email not confirmed')) {
+        errorMessage = 'Please verify your email address before signing in'
+      } else {
+        errorMessage = error.message
+      }
+    }
+    
     toast.add({
       title: 'Error',
-      description: error instanceof Error ? error.message : 'Failed to sign in'
+      description: errorMessage
     })
   } finally {
     isSubmitting.value = false

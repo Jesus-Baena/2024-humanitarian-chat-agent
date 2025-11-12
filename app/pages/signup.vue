@@ -101,9 +101,21 @@ async function onSubmit() {
       navigateTo('/login')
     }, 2000)
   } catch (error: unknown) {
+    // Enhanced error handling for rate limits and common auth errors
+    let errorMessage = 'Failed to create account'
+    if (error instanceof Error) {
+      if (error.message.includes('rate limit') || error.message.includes('429')) {
+        errorMessage = 'Too many signup attempts. Please wait a few minutes and try again.'
+      } else if (error.message.includes('already registered') || error.message.includes('already exists')) {
+        errorMessage = 'An account with this email already exists. Try signing in instead.'
+      } else {
+        errorMessage = error.message
+      }
+    }
+    
     toast.add({
       title: 'Error',
-      description: error instanceof Error ? error.message : 'Failed to create account'
+      description: errorMessage
     })
   } finally {
     isSubmitting.value = false
