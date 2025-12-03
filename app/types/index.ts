@@ -5,6 +5,8 @@ export interface Chat {
   updatedAt: Date
 }
 
+export type MessageStatus = 'pending' | 'sent' | 'failed'
+
 export interface ChatMessage {
   id: string
   chatId: string
@@ -16,4 +18,6 @@ export interface ChatMessage {
    * Helps us impose a stable order before introducing a database.
    */
   seq?: number
+  serverId?: string
+  status?: MessageStatus
 }

@@ -62,11 +62,17 @@ export function useChat(chatId: string) {
     messages.value.push(m)
   }
 
+  interface PersistResult {
+    success: boolean
+    id?: string
+    error?: string
+  }
+
   const persistMessage = async (
     role: 'user' | 'assistant',
     content: string,
     titleHint?: string
-  ): Promise<string | null> => {
+  ): Promise<PersistResult> => {
     try {
       const res = await fetch(`/api/chats/${encodeURIComponent(chatId)}/messages`, {
         method: 'POST',
@@ -74,11 +80,16 @@ export function useChat(chatId: string) {
         credentials: 'include',
         body: JSON.stringify({ role, content, titleHint })
       })
-      if (!res.ok) return null
+      if (!res.ok) {
+        const message = await res.text().catch(() => '')
+        console.error(`[useChat] Message API error: ${res.status} - ${message}`)
+        return { success: false, error: message || `Server error (${res.status})` }
+      }
       const data = await res.json().catch(() => null)
-      return (data && data.id) || null
-    } catch {
-      return null
+      return { success: true, id: (data && data.id) || undefined }
+    } catch (err) {
+      console.error('[useChat] Network error:', err)
+      return { success: false, error: getErrorMessage(err) }
     }
   }
 
@@ -182,19 +193,30 @@ export function useChat(chatId: string) {
     abortController = new AbortController()
     lastStreamPayload = payload || messages.value.slice()
     const assistantMessageId = generateId('assistant')
-    addMessage({ id: assistantMessageId, chatId, content: '', role: 'assistant', createdAt: new Date() })
+    addMessage({
+      id: assistantMessageId,
+      chatId,
+      content: '',
+      role: 'assistant',
+      createdAt: new Date(),
+      status: 'pending'
+    })
     const assistantIndex = messages.value.findIndex((m: ChatMessage) => m.id === assistantMessageId)
 
-    // Batched UI update state
+    // Batched UI update state with improved batching strategy
     let pendingContent: string | null = null
-    let scheduled = false
+    let rafId: number | null = null
     let firstVisible = true
+    let lastScrollTime = 0
+    const SCROLL_THROTTLE_MS = 100 // Reduced throttle for more responsive scrolling
+    let needsFinalScroll = false
 
     const scheduleFlushCommit = () => {
-      if (scheduled) return
-      scheduled = true
-      setTimeout(async () => {
-        scheduled = false
+      if (rafId !== null) return // Already scheduled
+      
+      rafId = requestAnimationFrame(async () => {
+        rafId = null
+        
         if (pendingContent != null && assistantIndex !== -1) {
           const current = messages.value[assistantIndex]
           if (current) {
@@ -205,11 +227,23 @@ export function useChat(chatId: string) {
             }
           }
           pendingContent = null
-          await nextTick()
-          pinToBottom()
+          
+          // Throttled scroll update - always scroll if we haven't recently
+          const now = Date.now()
+          if (now - lastScrollTime > SCROLL_THROTTLE_MS) {
+            lastScrollTime = now
+            await nextTick()
+            pinToBottom()
+            needsFinalScroll = false
+          } else {
+            // Mark that we need a final scroll
+            needsFinalScroll = true
+          }
         }
+        
+        // Re-schedule if more content arrived during this frame
         if (pendingContent != null) scheduleFlushCommit()
-      }, 40)
+      })
     }
 
     let completion: Awaited<ReturnType<typeof getCompletion>> | undefined
@@ -245,6 +279,8 @@ export function useChat(chatId: string) {
     let echoDone = lastUser === ''
     let dataLines: string[] = []
     let lastTokenSeen = '' // Track last token to prevent duplicate accumulation
+    let tokenBuffer: string[] = [] // Micro-batch tokens before normalization
+    const TOKEN_BATCH_SIZE = 5 // Process every N tokens together
 
     const flush = () => {
       if (!dataLines.length) return
@@ -280,7 +316,19 @@ export function useChat(chatId: string) {
         return
       }
       
-      accumulated += text
+      // Add to token buffer instead of immediate accumulation
+      tokenBuffer.push(text)
+      
+      // Only normalize and update when buffer reaches threshold or on significant content
+      const shouldFlushBuffer = tokenBuffer.length >= TOKEN_BATCH_SIZE || text.length > 100
+      if (!shouldFlushBuffer) {
+        return
+      }
+      
+      // Process buffered tokens
+      const bufferedText = tokenBuffer.join('')
+      tokenBuffer = []
+      accumulated += bufferedText
       if (!echoDone && lastUser) {
         if (accumulated.startsWith(lastUser + lastUser)) {
           accumulated = accumulated.slice(lastUser.length)
@@ -307,6 +355,12 @@ export function useChat(chatId: string) {
         const { done, value } = await reader.read()
         if (done) {
           flush()
+          // Final buffer flush for any remaining tokens
+          if (tokenBuffer.length > 0) {
+            accumulated += tokenBuffer.join('')
+            tokenBuffer = []
+            pendingContent = normalizeContent(accumulated)
+          }
           break
         }
         buffer += decoder.decode(value, { stream: true })
@@ -344,15 +398,47 @@ export function useChat(chatId: string) {
       errorMessage.value = getErrorMessage(e) || 'Streaming failed.'
       if (assistantIndex !== -1 && messages.value[assistantIndex]) {
         messages.value[assistantIndex]!.content = 'Error: ' + errorMessage.value
+        messages.value[assistantIndex]!.status = 'failed'
       }
     } finally {
+      // Cancel any pending RAF
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId)
+        rafId = null
+      }
+      
+      // Final flush of any remaining content
+      if (pendingContent != null && assistantIndex !== -1) {
+        const current = messages.value[assistantIndex]
+        if (current) {
+          current.content = pendingContent
+        }
+        pendingContent = null
+        needsFinalScroll = true
+      }
+      
+      // Ensure final scroll happens after stream completion
+      if (needsFinalScroll || pendingContent !== null) {
+        await nextTick()
+        pinToBottom()
+      }
+      
       isLoading.value = false
       isTyping.value = false
       abortController = null
+      
       // Persist final assistant message
       const final = assistantIndex !== -1 ? messages.value[assistantIndex] : undefined
-      if (final && final.content) {
-        await persistMessage('assistant', final.content)
+      if (!isError.value && final && final.content) {
+        const persistResult = await persistMessage('assistant', final.content)
+        if (!persistResult.success) {
+          isError.value = true
+          errorMessage.value = persistResult.error || 'Failed to save assistant response.'
+          final.status = 'failed'
+        } else {
+          final.status = 'sent'
+          if (persistResult.id) final.serverId = persistResult.id
+        }
       }
     }
   }
@@ -361,12 +447,50 @@ export function useChat(chatId: string) {
     if (!content.trim()) return
     const trimmed = content.trim()
     const userLocalId = generateId('user')
-    addMessage({ id: userLocalId, chatId, content: trimmed, role: 'user', createdAt: new Date() })
-    // Persist user message before streaming; also hints a title for new chat
-    // Don't await - fire and forget to avoid blocking
-    persistMessage('user', trimmed, trimmed).catch(err => {
-      console.error('[useChat] Failed to persist user message:', err)
-    })
+    const userMessage = {
+      id: userLocalId,
+      chatId,
+      content: trimmed,
+      role: 'user' as const,
+      createdAt: new Date(),
+      status: 'pending' as const
+    }
+    addMessage(userMessage)
+    isError.value = false
+    errorMessage.value = ''
+    
+    // Scroll to show the new user message
+    await nextTick()
+    pinToBottom()
+
+    const persistResult = await persistMessage('user', trimmed, trimmed)
+    if (!persistResult.success) {
+      const current = messages.value.find(m => m.id === userLocalId)
+      if (current) {
+        current.status = 'failed'
+      }
+      isError.value = true
+      errorMessage.value = persistResult.error || 'Failed to save your message.'
+      
+      // Show user-visible error
+      const toast = useToast()
+      toast.add({
+        title: 'Failed to send message',
+        description: persistResult.error || 'Please check your connection and try again.',
+        color: 'error',
+        timeout: 5000
+      })
+      
+      console.error('[useChat] Message persist failed:', persistResult.error)
+      return
+    }
+
+    const current = messages.value.find(m => m.id === userLocalId)
+    if (current) {
+      current.status = 'sent'
+      if (persistResult.id) current.serverId = persistResult.id
+    }
+
     await handleStreamCompletion(messages.value.slice())
   }
 

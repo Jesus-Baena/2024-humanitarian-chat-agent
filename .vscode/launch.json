@@ -1,0 +1,53 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Chromium (Dev)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3001",
+      "webRoot": "${workspaceFolder}",
+      "runtimeExecutable": "/usr/bin/chromium",
+      "sourceMapPathOverrides": {
+        "/_nuxt/*": "${webRoot}/*"
+      },
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      "name": "Attach to Chromium",
+      "type": "chrome",
+      "request": "attach",
+      "port": 9222,
+      "webRoot": "${workspaceFolder}",
+      "sourceMapPathOverrides": {
+        "/_nuxt/*": "${webRoot}/*"
+      }
+    },
+    {
+      "name": "Debug Production (Remote)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "https://chat.baena.ai",
+      "webRoot": "${workspaceFolder}",
+      "runtimeExecutable": "/usr/bin/chromium",
+      "sourceMaps": true
+    },
+    {
+      "name": "Server-side (Node)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/node_modules/.bin/nuxt",
+      "args": ["dev"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack Debug",
+      "configurations": ["Server-side (Node)", "Launch Chromium (Dev)"],
+      "stopAll": true
+    }
+  ]
+}

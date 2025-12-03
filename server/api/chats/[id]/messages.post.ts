@@ -6,6 +6,8 @@ import { getOrCreateProfileId } from '../../../utils/profiles'
  * @typedef {{ role: 'user' | 'assistant', content: string, titleHint?: string }} Body
  */
 
+const MAX_MESSAGE_LENGTH = 5000
+
 export default defineEventHandler(async (event) => {
   const supabase = getSupabaseServerClient(event)
   const id = getRouterParam(event, 'id') as string
@@ -24,6 +26,18 @@ export default defineEventHandler(async (event) => {
     return { error: 'Invalid role' }
   }
 
+  const safeContent = String(body.content).trim()
+  if (!safeContent) {
+    setResponseStatus(event, 400)
+    return { error: 'Message cannot be empty' }
+  }
+  if (safeContent.length > MAX_MESSAGE_LENGTH) {
+    setResponseStatus(event, 413)
+    return { error: `Message must be at most ${MAX_MESSAGE_LENGTH} characters` }
+  }
+
+  const rawTitleHint = String(body.titleHint ?? 'New chat').trim() || 'New chat'
+
   const res = await supabase.auth.getUser().catch(() => null)
   const authUserId: string | null = res?.data?.user?.id ?? null
   const sessionId = getOrCreateSessionId(event)
@@ -38,7 +52,7 @@ export default defineEventHandler(async (event) => {
 
   let chat = (chats || [])[0] as { id: string, user_id: string | null, session_id: string | null, title: string | null, is_deleted: boolean } | undefined
   if (!chat) {
-    const titleCandidate = body.role === 'user' ? (body.content ?? 'New chat') : (body.titleHint || 'New chat')
+    const titleCandidate = body.role === 'user' ? safeContent : rawTitleHint
     const neatTitle = ((titleCandidate || 'New chat').split(/\r?\n/)[0] ?? 'New chat').slice(0, 80)
     const insertChat = {
       id,
@@ -73,7 +87,7 @@ export default defineEventHandler(async (event) => {
   const { data: inserted, error: mErr } = await supabase
     .schema('web')
     .from('messages')
-    .insert({ chat_id: id, role: body.role, content: body.content })
+    .insert({ chat_id: id, role: body.role, content: safeContent })
     .select('id')
     .limit(1)
   if (mErr) {
@@ -82,7 +96,7 @@ export default defineEventHandler(async (event) => {
     return { error: mErr.message }
   }
 
-  const titleCandidate = (body.role === 'user' ? (body.content ?? 'New chat') : (body.titleHint || 'New chat'))
+  const titleCandidate = body.role === 'user' ? safeContent : rawTitleHint
   const neatTitle = ((titleCandidate || 'New chat').split(/\r?\n/)[0] ?? 'New chat').slice(0, 80)
   const titleUpdate = chat.title ? {} : { title: neatTitle || 'New chat' }
   const { error: updateErr } = await supabase

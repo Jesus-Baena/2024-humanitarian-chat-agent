@@ -44,31 +44,31 @@ async function handleSendMessage(message: string) {
           variant="outline"
           rounded="full"
           class="flex items-center space-x-2 text-gray-600 dark:text-gray-400"
-          @click="handleSendMessage('Help me create a Vue composable')"
+          @click="handleSendMessage('Does UNDSS covers the security of NGOs?')"
         >
           <UIcon
             name="i-heroicons-document-currency-dollar-solid"
             class="h-4 w-4"
           />
-          <span>Help me create a Vue composable</span>
+          <span>Does UNDSS covers the security of NGOs?</span>
         </UButton>
         <UButton
           variant="outline"
           rounded="full"
           class="flex items-center space-x-2 text-gray-600 dark:text-gray-400"
-          @click="handleSendMessage('Tell me more about UnJS')"
+          @click="handleSendMessage('What is an L4 emergency?')"
         >
           <UIcon name="i-heroicons-globe-europe-africa-solid" class="h-4 w-4" />
-          <span>Tell me more about UnJS</span>
+          <span>What is an L4 emergency?</span>
         </UButton>
         <UButton
           variant="outline"
           rounded="full"
           class="flex items-center space-x-2 text-gray-600 dark:text-gray-400"
-          @click="handleSendMessage('Why should I consider VueUse?')"
+          @click="handleSendMessage('Difference between key indicators and sphere standards??')"
         >
           <UIcon name="i-heroicons-truck-solid" class="h-4 w-4" />
-          <span>Why should I consider VueUse?</span>
+          <span>What is the difference between key indicators and sphere standards?</span>
         </UButton>
       </div>
     </div>

@@ -11,7 +11,7 @@
       
       <div>
         <strong>Flowise API Key:</strong>
-        <pre class="bg-gray-100 p-2 rounded">{{ flowiseApiKey ? '***SET*** (length: ' + flowiseApiKey.length + ')' : 'NOT SET' }}</pre>
+        <p class="text-sm text-gray-500">Kept private on the server and not exposed client-side.</p>
       </div>
     </div>
 
@@ -26,9 +26,8 @@
 </template>
 
 <script setup lang="ts">
-const runtimeConfig = useRuntimeConfig()
-const flowiseUrl = runtimeConfig.public?.flowiseUrl || 'NOT SET'
-const flowiseApiKey = runtimeConfig.public?.flowiseApiKey || ''
+  const runtimeConfig = useRuntimeConfig()
+  const flowiseUrl = runtimeConfig.public?.flowiseUrl || 'NOT SET'
 
 const testResult = ref('')
 const testSuccess = ref(false)
@@ -42,13 +41,11 @@ async function testConnection() {
       testResult.value = 'ERROR: Flowise URL is not configured'
       return
     }
-    
-    const response = await fetch(flowiseUrl, {
+    const response = await fetch('/api/flowise.proxy', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'text/event-stream, application/json, */*',
-        ...(flowiseApiKey ? { Authorization: `Bearer ${flowiseApiKey}` } : {})
+        'Accept': 'application/json'
       },
       body: JSON.stringify({ 
         question: 'Hello, this is a test', 

@@ -5,42 +5,7 @@ import type { ChatMessage } from '~/types'
  * Currently supports a single Flowise-style endpoint (simple JSON response or SSE / streaming)
  */
 export function useAssistants() {
-  // Runtime config (nuxt.config.ts should expose runtimeConfig.public.flowiseUrl)
-  const runtimeConfig = useRuntimeConfig()
-  
-  // DEBUG: Log what we actually have in runtime config
-  console.log('[useAssistants] DEBUG - runtimeConfig.public:', {
-    flowiseUrl: runtimeConfig.public?.flowiseUrl,
-    flowiseApiKey: runtimeConfig.public?.flowiseApiKey ? '***SET***' : 'NOT SET',
-    allKeys: Object.keys(runtimeConfig.public || {})
-  })
-  
-  const viteEnv = (import.meta as unknown as { env?: Record<string, string> })
-    .env
-  const flowiseUrl: string | undefined
-    = (runtimeConfig.public?.flowiseUrl as string | undefined)
-      || viteEnv?.NUXT_PUBLIC_FLOWISE_URL
-      || viteEnv?.VITE_FLOWISE_URL
-
-  // --- GET THE API KEY FROM ENVIRONMENT VARIABLES ---
-  // <-- ADD THIS BLOCK
-  const flowiseApiKey: string | undefined
-    = (runtimeConfig.public?.flowiseApiKey as string | undefined)
-      || viteEnv?.NUXT_PUBLIC_FLOWISE_API_KEY
-      || viteEnv?.VITE_FLOWISE_API_KEY
-
-  console.log('[useAssistants] DEBUG - Final values:', {
-    flowiseUrl: flowiseUrl || 'NOT SET',
-    flowiseApiKey: flowiseApiKey ? '***SET***' : 'NOT SET'
-  })
-
-  if (!flowiseUrl) {
-    // We only warn once in dev mode.
-    if (import.meta.dev)
-      console.warn(
-        '[useAssistants] Missing Flowise URL (set NUXT_PUBLIC_FLOWISE_URL or public.flowiseUrl).'
-      )
-  }
+  const PROXY_PATH = '/api/flowise.proxy'
 
   /** Normalise arbitrary Flowise JSON shapes to plain text */
   function extractText(parsed: unknown): string | undefined {
@@ -81,28 +46,23 @@ export function useAssistants() {
     messages: ChatMessage[],
     signal?: AbortSignal
   ): Promise<CompletionResult> {
-    if (!flowiseUrl) {
-      throw new Error('No completion backend configured.')
+    const question: string = messages.map((m: ChatMessage) => `${m.role}: ${m.content}`).join('\n')
+    if (!question.trim()) {
+      throw new Error('No content to send to the assistant.')
     }
 
-    const question: string = messages.map((m: ChatMessage) => `${m.role}: ${m.content}`).join('\n')
-
     const start = performance.now()
-    // If user is logged in, include credentials for cross-app authentication
     const fetchOptions: RequestInit = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'text/event-stream, application/json, */*',
-        ...(flowiseApiKey ? { Authorization: `Bearer ${flowiseApiKey}` } : {})
       },
       body: JSON.stringify({ question, streaming: true }),
       signal
-      // credentials removed to avoid CORS issues with Flowise
     }
-    const response: Response = await fetch(flowiseUrl, fetchOptions).catch((err: unknown) => {
-      console.error('[useAssistants] Network error', err)
-      throw new Error('Network error contacting Flowise endpoint')
+    const response: Response = await fetch(PROXY_PATH, fetchOptions).catch((err: unknown) => {
+      throw new Error('Network error contacting Flowise proxy')
     })
 
     if (!response) throw new Error('No response received')

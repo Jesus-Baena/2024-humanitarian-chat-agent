@@ -4,6 +4,8 @@
  */
 export default defineEventHandler((event) => {
   const config = useRuntimeConfig(event)
+  const flowiseUrl = config.flowiseUrl || config.public.flowiseUrl
+  const flowiseApiKey = config.flowiseApiKey
   
   const checks: {
     timestamp: string
@@ -27,8 +29,8 @@ export default defineEventHandler((event) => {
     status: 'healthy',
     checks: {
       flowise: {
-        url: !!config.public.flowiseUrl,
-        apiKey: !!config.public.flowiseApiKey,
+        url: !!flowiseUrl,
+        apiKey: !!flowiseApiKey,
         status: 'ok'
       },
       supabase: {
@@ -40,10 +42,14 @@ export default defineEventHandler((event) => {
   }
 
   // Check Flowise configuration
-  if (!config.public.flowiseUrl) {
+  if (!flowiseUrl) {
     checks.status = 'unhealthy'
     checks.checks.flowise.status = 'error'
     checks.checks.flowise.error = 'NUXT_PUBLIC_FLOWISE_URL not configured - AI completions will fail'
+  } else if (!flowiseApiKey) {
+    checks.status = 'unhealthy'
+    checks.checks.flowise.status = 'error'
+    checks.checks.flowise.error = 'Flowise API key missing - AI completions will fail'
   }
 
   // Check Supabase configuration
