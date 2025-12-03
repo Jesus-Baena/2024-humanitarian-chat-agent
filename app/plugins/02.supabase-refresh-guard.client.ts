@@ -1,11 +1,11 @@
 /**
- * Guard against infinite refresh token loops that cause rate limiting.
+ * Manual token refresh management with rate limiting protection.
  * 
- * This plugin monitors auth errors and clears invalid tokens when:
- * - Refresh token is not found (expired/revoked)
- * - Too many refresh attempts fail in a short period
- * 
- * Prevents 429 rate limit errors from Supabase auth service.
+ * Since autoRefreshToken is disabled in nuxt.config.ts, this plugin:
+ * - Manually refreshes tokens when needed (before they expire)
+ * - Detects and clears invalid tokens immediately on page load
+ * - Prevents refresh loops that cause 429 rate limit errors
+ * - Only refreshes when the session is actually valid and not expired
  */
 
 export default defineNuxtPlugin({
@@ -15,68 +15,136 @@ export default defineNuxtPlugin({
     const supabase = useSupabaseClient()
     const user = useSupabaseUser()
     
-    let failedRefreshCount = 0
-    let lastFailureTime = 0
-    const FAILURE_THRESHOLD = 3
-    const RESET_WINDOW_MS = 10000 // 10 seconds
+    let isRefreshing = false
+    let lastRefreshAttempt = 0
+    const MIN_REFRESH_INTERVAL = 60000 // Minimum 1 minute between refresh attempts
     
-    // Monitor auth state changes for errors
-    supabase.auth.onAuthStateChange((event, session) => {
-      const now = Date.now()
-      
-      // Reset counter if enough time has passed
-      if (now - lastFailureTime > RESET_WINDOW_MS) {
-        failedRefreshCount = 0
-      }
-      
-      // Detect failed token refresh attempts
-      if (event === 'TOKEN_REFRESHED' && !session) {
-        failedRefreshCount++
-        lastFailureTime = now
+    // Check session validity immediately on mount
+    if (import.meta.client) {
+      onMounted(async () => {
+        await checkAndCleanSession()
         
-        console.warn(`[supabase-refresh-guard] Token refresh failed (${failedRefreshCount}/${FAILURE_THRESHOLD})`)
-        
-        // If we've failed too many times, clear the session
-        if (failedRefreshCount >= FAILURE_THRESHOLD) {
-          console.error('[supabase-refresh-guard] Too many refresh failures. Clearing session to prevent rate limiting.')
-          clearInvalidSession()
+        // Set up periodic token refresh only if we have a valid session
+        // Refresh 5 minutes before expiry (tokens are valid for 1 hour by default)
+        if (user.value) {
+          const refreshInterval = setInterval(async () => {
+            await maybeRefreshToken()
+          }, 5 * 60 * 1000) // Check every 5 minutes
+          
+          // Clean up on unmount
+          onUnmounted(() => clearInterval(refreshInterval))
         }
+      })
+    }
+    
+    // Monitor auth state changes
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        isRefreshing = false
       }
       
-      // Successful refresh or sign in resets the counter
-      if (event === 'SIGNED_IN' || (event === 'TOKEN_REFRESHED' && session)) {
-        failedRefreshCount = 0
+      if (event === 'SIGNED_IN' && session) {
+        console.info('[supabase-refresh-guard] User signed in successfully')
+      }
+      
+      // If we get a token refreshed event without a session, something is wrong
+      if (event === 'TOKEN_REFRESHED' && !session) {
+        console.error('[supabase-refresh-guard] Token refresh failed - clearing invalid session')
+        clearInvalidSession()
       }
     })
     
-    // Also check on initial load
-    if (import.meta.client) {
-      // Check if we have cookies but no valid user
+    /**
+     * Check if the current session is valid, clear it if not
+     */
+    async function checkAndCleanSession() {
       const hasAuthCookies = document.cookie.includes('sb-')
       
-      if (hasAuthCookies && !user.value) {
-        // Give it a moment for auth to initialize
-        setTimeout(async () => {
-          try {
-            const { data, error } = await supabase.auth.getSession()
-            
-            if (error || !data.session) {
-              console.warn('[supabase-refresh-guard] Found auth cookies but no valid session. Clearing.')
-              clearInvalidSession()
-            }
-          } catch (err) {
-            console.error('[supabase-refresh-guard] Error checking session:', err)
+      if (!hasAuthCookies) {
+        return // No cookies, nothing to check
+      }
+      
+      try {
+        // Get the current session from cookies (doesn't trigger refresh)
+        const { data, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.warn('[supabase-refresh-guard] Session check error:', error.message)
+          
+          // Common errors that mean we should clear the session
+          if (
+            error.message.includes('refresh_token_not_found') ||
+            error.message.includes('invalid') ||
+            error.message.includes('expired')
+          ) {
+            console.warn('[supabase-refresh-guard] Detected invalid session, clearing cookies')
             clearInvalidSession()
           }
-        }, 2000)
+          return
+        }
+        
+        if (!data.session) {
+          console.warn('[supabase-refresh-guard] Found auth cookies but no session, clearing')
+          clearInvalidSession()
+        }
+      } catch (err) {
+        console.error('[supabase-refresh-guard] Error checking session:', err)
+        // On any unexpected error, clear to be safe
+        clearInvalidSession()
       }
     }
     
+    /**
+     * Manually refresh the token if needed, with rate limiting
+     */
+    async function maybeRefreshToken() {
+      // Don't refresh if already refreshing or if we refreshed recently
+      const now = Date.now()
+      if (isRefreshing || (now - lastRefreshAttempt < MIN_REFRESH_INTERVAL)) {
+        return
+      }
+      
+      // Only refresh if we have a user
+      if (!user.value) {
+        return
+      }
+      
+      try {
+        isRefreshing = true
+        lastRefreshAttempt = now
+        
+        const { data, error } = await supabase.auth.refreshSession()
+        
+        if (error) {
+          console.error('[supabase-refresh-guard] Token refresh failed:', error.message)
+          
+          // If refresh fails with specific errors, clear the session
+          if (
+            error.message.includes('refresh_token_not_found') ||
+            error.message.includes('invalid_grant') ||
+            error.message.includes('over_request_rate_limit')
+          ) {
+            console.warn('[supabase-refresh-guard] Clearing invalid session due to refresh error')
+            clearInvalidSession()
+          }
+        } else if (data.session) {
+          console.info('[supabase-refresh-guard] Token refreshed successfully')
+        }
+      } catch (err) {
+        console.error('[supabase-refresh-guard] Exception during token refresh:', err)
+      } finally {
+        isRefreshing = false
+      }
+    }
+    
+    /**
+     * Clear all Supabase auth cookies (but preserve chat_session_id)
+     */
     function clearInvalidSession() {
-      // Sign out to clear all cookies
+      // Sign out locally (doesn't make API call)
       supabase.auth.signOut({ scope: 'local' })
       
-      // Clear all sb- cookies manually as a fallback
+      // Clear ONLY Supabase auth cookies (sb-*), preserve chat_session_id for anonymous usage
       if (import.meta.client) {
         const cookies = document.cookie.split(';')
         for (const cookie of cookies) {
@@ -84,6 +152,7 @@ export default defineNuxtPlugin({
           if (eqIndex === -1) continue
           
           const name = cookie.substring(0, eqIndex).trim()
+          // Only clear Supabase auth cookies, NOT chat_session_id
           if (name.startsWith('sb-')) {
             // Clear for current domain
             document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
@@ -99,8 +168,8 @@ export default defineNuxtPlugin({
         }
       }
       
-      failedRefreshCount = 0
-      console.info('[supabase-refresh-guard] Invalid session cleared. Please sign in again.')
+      isRefreshing = false
+      console.info('[supabase-refresh-guard] Invalid auth session cleared. You can continue using anonymous chat or sign in again.')
     }
   }
 })

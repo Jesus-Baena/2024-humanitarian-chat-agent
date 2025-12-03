@@ -61,26 +61,31 @@ This is a **refresh token loop** - your browser had an expired token and kept tr
 
 ## What I've Fixed
 
-### 1. Better Error Messages ✅
+### 1. ROOT CAUSE FIX ✅ (December 2025)
+**Files:** `nuxt.config.ts`, `app/plugins/02.supabase-refresh-guard.client.ts`
+
+**The Problem:**
+The `@nuxtjs/supabase` module was **automatically trying to refresh tokens** on every page load, even when tokens were invalid/expired. This caused 100+ refresh attempts per second.
+
+**The Solution:**
+- **Disabled automatic token refresh** (`autoRefreshToken: false` in `nuxt.config.ts`)
+- **Manual refresh control** with rate limiting (max 1 attempt per minute)
+- **Immediate invalid session detection** on page load (before any refresh attempts)
+- **Smart refresh timing** (only when user is logged in, every 5 minutes max)
+
+**What you'll see now:**
+```
+[supabase-refresh-guard] User signed in successfully
+[supabase-refresh-guard] Token refreshed successfully  (every 5 min if needed)
+[supabase-refresh-guard] Detected invalid session, clearing cookies  (on page load if bad)
+```
+
+### 2. Better Error Messages ✅
 **Files:** `app/pages/login.vue`, `app/pages/signup.vue`
 
 Now shows user-friendly messages:
 - "Too many login attempts. Please wait a few minutes and try again."
 - Detects rate limit errors specifically
-
-### 2. Automatic Protection ✅
-**File:** `app/plugins/02.supabase-refresh-guard.client.ts`
-
-**What it does:**
-- Detects when refresh tokens keep failing
-- Automatically clears bad cookies after 3 failures
-- Prevents the rate limit loop from happening
-
-**You'll see warnings like:**
-```
-[supabase-refresh-guard] Token refresh failed (2/3)
-[supabase-refresh-guard] Too many refresh failures. Clearing session.
-```
 
 ### 3. Updated Documentation ✅
 **File:** `docs/troubleshooting/rate-limit-errors.md`

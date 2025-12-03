@@ -38,6 +38,16 @@ export default defineNuxtConfig({
         secure: true,
         // Set domain for production - this will be .baena.ai
         domain: process.env.NODE_ENV === 'production' ? '.baena.ai' : undefined
+      },
+      clientOptions: {
+        auth: {
+          // Disable automatic token refresh to prevent rate limit loops
+          autoRefreshToken: false,
+          // Keep session persistence for normal auth flow
+          persistSession: true,
+          // Disable automatic session detection from URL (handled in callback page)
+          detectSessionInUrl: false
+        }
       }
     }]
   ],
@@ -68,12 +78,13 @@ export default defineNuxtConfig({
     supabaseKey,
     // Support both new (sb_secret_) and legacy (service_role) key formats
     supabaseSecretKey: process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+    flowiseUrl,
+    flowiseApiKey,
     public: {
       siteUrl,
       supabaseUrl,
       supabaseKey,
       flowiseUrl,
-      flowiseApiKey,
       authBase,
       loginPath,
       logoutPath
