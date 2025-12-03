@@ -61,7 +61,7 @@ export function useAssistants() {
       body: JSON.stringify({ question, streaming: true }),
       signal
     }
-    const response: Response = await fetch(PROXY_PATH, fetchOptions).catch((err: unknown) => {
+    const response: Response = await fetch(PROXY_PATH, fetchOptions).catch((_err: unknown) => {
       throw new Error('Network error contacting Flowise proxy')
     })
 
