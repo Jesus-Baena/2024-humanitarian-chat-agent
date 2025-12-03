@@ -477,8 +477,7 @@ export function useChat(chatId: string) {
       toast.add({
         title: 'Failed to send message',
         description: persistResult.error || 'Please check your connection and try again.',
-        color: 'error',
-        timeout: 5000
+        color: 'error'
       })
       
       console.error('[useChat] Message persist failed:', persistResult.error)
