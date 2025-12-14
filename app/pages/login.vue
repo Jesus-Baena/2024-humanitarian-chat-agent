@@ -3,7 +3,7 @@ import { resolveAuthLinks } from '~/utils/authLinks'
 
 definePageMeta({
   layout: 'default',
-  middleware: [] // Allow login page even when authenticated for re-auth
+  middleware: ['unauthenticated']
 })
 
 useSeoMeta({
