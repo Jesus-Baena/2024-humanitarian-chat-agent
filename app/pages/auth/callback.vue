@@ -11,7 +11,6 @@
 const supabase = useSupabaseClient()
 const router = useRouter()
 const route = useRoute()
-const { data: { session } } = await useAsyncData('session', () => supabase.auth.getSession())
 
 onMounted(async () => {
   const redirectTo = route.query.redirectTo?.toString() || '/'
