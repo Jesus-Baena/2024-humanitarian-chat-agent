@@ -53,22 +53,26 @@ const triggerExternalLogin = () => {
   }
 }
 
-// Get the base URL for OAuth redirects (production URL in production, local in dev)
-const baseUrl = config.public.siteUrl || (typeof window !== 'undefined' ? window.location.origin : '')
+// Get the base URL for OAuth redirects - use current origin to ensure we come back here
+const baseUrl = typeof window !== 'undefined' ? window.location.origin : (config.public.siteUrl || '')
 
 // Handle redirect_to parameter for cross-domain auth
 // Supports: baena.ai -> chat.baena.ai
 const redirectTo = computed(() => {
   const path = route.query.redirect_to?.toString() || route.query.redirectTo?.toString()
   if (path) {
-    // Allow redirects to chat.baena.ai from baena.ai
+    // Allow full URL redirects to allowed domains
     if (path.startsWith('http://localhost:3001') || 
         path.startsWith('https://chat.baena.ai') ||
         path.startsWith('http://chat.localhost:3001')) {
       return path
     }
+    // Allow relative paths
+    if (path.startsWith('/')) {
+      return path
+    }
   }
-  // Default to index page
+  // Default to index page of current site (chat.baena.ai, not baena.ai)
   return '/'
 })
 

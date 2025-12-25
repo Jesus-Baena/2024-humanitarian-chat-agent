@@ -32,13 +32,18 @@ export function resolveAuthLinks(
   const currentUrl = options.currentUrl?.trim()
 
   if (!authBase) {
+    // Local auth: use local endpoints and preserve current URL for redirects
+    const buildRedirect = (param: string) =>
+      currentUrl ? `?${param}=${encodeURIComponent(currentUrl)}` : ''
+    
     return {
-      login: '/login',
-      logout: '/auth/logout',
+      login: `/login${buildRedirect(redirectParamLogin)}`,
+      logout: `/auth/logout${buildRedirect(redirectParamLogout)}`,
       profile: '/profile'
     }
   }
 
+  // External auth: redirect to authBase (e.g., baena.ai)
   const base = trimTrailingSlash(authBase)
   const buildRedirect = (param: string) =>
     currentUrl ? `?${param}=${encodeURIComponent(currentUrl)}` : ''
