@@ -1,5 +1,3 @@
-import { resolveAuthLinks } from '~/utils/authLinks'
-
 interface User {
   id: string
   email?: string
