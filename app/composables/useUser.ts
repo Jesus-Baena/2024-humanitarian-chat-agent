@@ -10,6 +10,11 @@ interface User {
   [key: string]: unknown
 }
 
+/**
+ * Composable for managing user authentication state.
+ * Fetches user data from /api/me and provides logout functionality.
+ */
+
 const useUser = () => {
   const user = useState<User | null>('user', () => null)
   const loading = useState<boolean>('user-loading', () => true)

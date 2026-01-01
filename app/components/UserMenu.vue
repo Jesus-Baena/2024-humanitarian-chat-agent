@@ -122,7 +122,7 @@ interface DropdownItemLink extends DropdownItemBase {
 }
 
 interface DropdownItemAction extends DropdownItemBase {
-  click: () => Promise<void> | void
+  onClick: () => Promise<void> | void
 }
 
 type DropdownItem = DropdownItemSlot | DropdownItemLink | DropdownItemAction
@@ -150,7 +150,7 @@ const items = computed<DropdownItem[][]>(() => {
       {
         label: 'Logout',
         icon: 'i-lucide-log-out',
-        click: logout
+        onClick: logout
       }
     ]
   ]
