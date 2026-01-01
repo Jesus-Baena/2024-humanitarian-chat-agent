@@ -75,22 +75,12 @@ const useUser = () => {
     } finally {
       user.value = null
       
-      const { public: publicCfg } = useRuntimeConfig()
-      const current = typeof window !== 'undefined' ? window.location.href : ''
-      const links = resolveAuthLinks(publicCfg || {}, {
-        currentUrl: current,
-        redirectParamLogout: 'redirectTo'
-      })
-      
-      // Always use the local logout endpoint to ensure server-side cookies are cleared.
-      // We pass the final destination (links.logout) as the redirectTo parameter.
-      // If links.logout is already a local path, we just use it directly if it matches /api/auth/logout logic,
-      // but to be safe and consistent, we route everything through /api/auth/logout.
-      
+      // Redirect to /api/auth/logout to clear server-side cookies,
+      // then redirect back to the chat home page for a fresh anonymous session
       const localLogoutUrl = '/api/auth/logout'
-      const finalRedirect = links.logout
+      const chatHomeUrl = '/'
       
-      window.location.href = `${localLogoutUrl}?redirectTo=${encodeURIComponent(finalRedirect)}`
+      window.location.href = `${localLogoutUrl}?redirectTo=${encodeURIComponent(chatHomeUrl)}`
     }
   }
 
