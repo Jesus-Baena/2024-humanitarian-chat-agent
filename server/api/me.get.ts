@@ -3,15 +3,11 @@ import { getOrCreateSessionId } from '../utils/session'
 import { getOrCreateProfileId } from '../utils/profiles'
 
 export default defineEventHandler(async (event) => {
-  console.log('[me.get] Request started')
   const supabase = getSupabaseServerClient(event)
   // Validate the session and fetch the user
-  console.log('[me.get] Fetching user...')
   const { data, error } = await supabase.auth.getUser()
-  console.log('[me.get] User fetch result:', { hasUser: !!data?.user, error: error?.message })
   if (error || !data?.user) {
     // Anonymous allowed: return null user
-    console.log('[me.get] Returning null (anonymous)')
     return null
   }
   const { user } = data
