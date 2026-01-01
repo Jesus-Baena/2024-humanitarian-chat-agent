@@ -1,6 +1,6 @@
-import { getSupabaseServerClient } from '../utils/supabase'
+// import { getSupabaseServerClient } from '../utils/supabase'
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (_event) => {
   try {
     // const supabase = getSupabaseServerClient(event)
     // Trigger a lightweight auth call to ensure cookies are refreshed when needed.
