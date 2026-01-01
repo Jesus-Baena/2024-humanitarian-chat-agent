@@ -81,10 +81,16 @@ not at runtime. Docker Swarm secrets/env vars alone are NOT sufficient.
 
 ### Quick Deploy
 
-On the Docker Swarm manager:
+From your local machine:
 
 ```bash
-./deploy.sh
+./ssh-deploy.sh
+```
+
+Or on the Docker Swarm manager (100.120.229.13):
+
+```bash
+sudo docker stack deploy -c docker-compose.prod.yml web
 ```
 
 ### Troubleshooting
@@ -93,7 +99,7 @@ On the Docker Swarm manager:
 
 1. **Check GitHub Secrets:** See [SECRETS_SETUP.md](SECRETS_SETUP.md)
 2. **Verify build logs:** Check GitHub Actions for "Verify build arguments" step
-3. **Emergency fix:** Run `./emergency-deploy.sh` (but fix GitHub Secrets after!)
+3. **Rebuild:** Push to main branch to trigger new build with correct secrets
 
 ### Full Documentation
 
