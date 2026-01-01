@@ -71,7 +71,6 @@ const useUser = () => {
       user.value = null
       
       const { public: publicCfg } = useRuntimeConfig()
-      const apiBase: string = (publicCfg.apiBase as string) || ''
       const current = typeof window !== 'undefined' ? window.location.href : ''
       const links = resolveAuthLinks(publicCfg || {}, {
         currentUrl: current,
