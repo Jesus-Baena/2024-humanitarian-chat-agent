@@ -15,9 +15,10 @@ export default defineEventHandler(async (event) => {
   
   // If redirectTo is provided and valid, use it; otherwise default to origin
   if (redirectTo) {
-    // Allow redirects to same origin or to chat.baena.ai subdomain
+    // Allow redirects to same origin, chat.baena.ai, or the parent baena.ai domain
     if (redirectTo.startsWith('/') || 
         redirectTo.includes('chat.baena.ai') || 
+        redirectTo.includes('baena.ai') ||
         redirectTo.includes('localhost:3001')) {
       return sendRedirect(event, redirectTo, 302)
     }

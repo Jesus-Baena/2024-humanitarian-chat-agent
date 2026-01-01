@@ -78,13 +78,15 @@ const useUser = () => {
         redirectParamLogout: 'redirectTo'
       })
       
-      if (links.logout.startsWith('http')) {
-        window.location.href = links.logout
-      } else {
-        const base = apiBase ? apiBase.replace(/\/$/, '') : ''
-        const path = links.logout.startsWith('/') ? links.logout : `/${links.logout}`
-        window.location.href = `${base}${path}`
-      }
+      // Always use the local logout endpoint to ensure server-side cookies are cleared.
+      // We pass the final destination (links.logout) as the redirectTo parameter.
+      // If links.logout is already a local path, we just use it directly if it matches /api/auth/logout logic,
+      // but to be safe and consistent, we route everything through /api/auth/logout.
+      
+      const localLogoutUrl = '/api/auth/logout'
+      const finalRedirect = links.logout
+      
+      window.location.href = `${localLogoutUrl}?redirectTo=${encodeURIComponent(finalRedirect)}`
     }
   }
 
