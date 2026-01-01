@@ -62,31 +62,30 @@ const useUser = () => {
   })
 
   const logout = async () => {
-    const supabase = useSupabaseClient()
-    await supabase.auth.signOut()
-    user.value = null
-
-    const { public: publicCfg } = useRuntimeConfig()
-    const apiBase: string = (publicCfg.apiBase as string) || ''
-    const current = typeof window !== 'undefined' ? window.location.href : ''
-    const links = resolveAuthLinks(publicCfg || {}, {
-      currentUrl: current,
-      redirectParamLogout: 'redirectTo'
-    })
-    
-    // If we have an external auth base, we can redirect there to ensure global logout,
-    // but since we share cookies and just signed out locally, we might just want to
-    // redirect to home or login page to avoid issues if the external logout is flaky.
-    // However, to maintain the "ecosystem" feel, we'll stick to the plan but fallback
-    // to local redirection if needed.
-    
-    if (links.logout.startsWith('http')) {
-      window.location.href = links.logout
-      return
+    try {
+      const supabase = useSupabaseClient()
+      await supabase.auth.signOut()
+    } catch (error) {
+      console.error('Error during sign out:', error)
+    } finally {
+      user.value = null
+      
+      const { public: publicCfg } = useRuntimeConfig()
+      const apiBase: string = (publicCfg.apiBase as string) || ''
+      const current = typeof window !== 'undefined' ? window.location.href : ''
+      const links = resolveAuthLinks(publicCfg || {}, {
+        currentUrl: current,
+        redirectParamLogout: 'redirectTo'
+      })
+      
+      if (links.logout.startsWith('http')) {
+        window.location.href = links.logout
+      } else {
+        const base = apiBase ? apiBase.replace(/\/$/, '') : ''
+        const path = links.logout.startsWith('/') ? links.logout : `/${links.logout}`
+        window.location.href = `${base}${path}`
+      }
     }
-    const base = apiBase ? apiBase.replace(/\/$/, '') : ''
-    const path = links.logout.startsWith('/') ? links.logout : `/${links.logout}`
-    window.location.href = `${base}${path}`
   }
 
   return {
