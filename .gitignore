@@ -35,16 +35,27 @@ logs
 *.key
 *.pem
 
-# Deployment scripts - some are ignored to prevent committing sensitive data
-# Allow emergency-deploy.sh and deploy.sh (template scripts with defaults)
-# Ignore manual-deploy.sh and other custom deploy scripts
-*deploy*.sh
-!deploy.sh
-!emergency-deploy.sh
-manual-deploy.sh
+# ========================================
+# DEPLOYMENT & INFRASTRUCTURE FILES
+# ========================================
+# These contain sensitive infrastructure details, API endpoints, 
+# deployment procedures, and should NOT be public
 
-# Deployment and infrastructure documentation
-# These files contain sensitive information about deployment setup
+# Docker Compose files (contain infrastructure config)
+docker-compose*.yml
+docker-compose*.yaml
+!docker-compose.example.yml
+
+# All shell scripts (deployment, diagnostics, helpers)
+*.sh
+
+# All root-level markdown files except README and LICENSE
+# (These typically contain deployment/setup/debug procedures)
+/*.md
+!README.md
+!/LICENSE.md
+
+# Specific documentation patterns
 *DEPLOYMENT*.md
 *DEPLOY*.md
 *SETUP*.md
@@ -56,12 +67,26 @@ manual-deploy.sh
 *SECURITY*.md
 *PORTAINER*.md
 *MCP*.md
-deploy*.sh
-manual-deploy.sh
-show-github-secrets.sh
-quick-fix*.sh
-chat-service-for-web-stack.yml
-docker-compose.yml
+*AUTH*.md
+*GUIDE*.md
+*TESTING*.md
+*FLOW*.md
+*IMPLEMENTATION*.md
+*EXECUTIVE*.md
+*INDEX*.md
+*QUICK*.md
+
+# Documentation directories (contain infrastructure details)
+/docs/
+!/docs/README.md
+
+# Diagnostic/debug files
+*.html
+!public/*.html
+/public/test-chat.html
+
+# Tool configuration that may contain sensitive data
+/tools.yaml
 
 # VSC
 .history
