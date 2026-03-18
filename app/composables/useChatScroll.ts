@@ -4,7 +4,6 @@ export default function useChatScroll() {
   const isAtBottom = ref<boolean>(true)
   const showScrollButton = ref<boolean>(false)
 
-  // Check if chat is scrolled to bottom
   const checkScrollPosition = (): void => {
     if (scrollContainer.value) {
       const { scrollTop, scrollHeight, clientHeight } = scrollContainer.value
@@ -13,70 +12,38 @@ export default function useChatScroll() {
     }
   }
 
-  // Smooth scroll to bottom
   const scrollToBottom = (immediate = false): void => {
     if (!scrollContainer.value) return
-
-    const targetScrollTop = scrollContainer.value.scrollHeight - scrollContainer.value.clientHeight
-
     if (immediate) {
-      scrollContainer.value.scrollTop = targetScrollTop
-      return
+      scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight
+    } else {
+      scrollContainer.value.scrollTo({ top: scrollContainer.value.scrollHeight, behavior: 'smooth' })
     }
-
-    const startScrollTop = scrollContainer.value.scrollTop
-    const distance = targetScrollTop - startScrollTop
-    const duration = 300
-
-    const startTime = performance.now()
-    function step(currentTime: number): void {
-      const elapsed = currentTime - startTime
-      const progress = Math.min(elapsed / duration, 1)
-      const easeInOutCubic = progress < 0.5
-        ? 4 * progress * progress * progress
-        : 1 - Math.pow(-2 * progress + 2, 3) / 2
-
-      if (scrollContainer.value) {
-        scrollContainer.value.scrollTop = startScrollTop + distance * easeInOutCubic
-
-        if (progress < 1) {
-          requestAnimationFrame(step)
-        }
-      }
-    }
-
-    requestAnimationFrame(step)
   }
 
   async function pinToBottom() {
-    if (isAtBottom.value) {
-      // Force immediate scroll without animation when messages change
-      if (scrollContainer.value) {
-        await nextTick()
-        scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight
-      }
+    if (isAtBottom.value && scrollContainer.value) {
+      await nextTick()
+      scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight
     }
   }
 
-  // Add scroll event listener
   onMounted(() => {
     if (scrollContainer.value) {
       scrollContainer.value.addEventListener('scroll', checkScrollPosition)
       nextTick(() => {
-        scrollToBottom(true) // Use immediate scroll on mount
+        scrollToBottom(true)
         textareaRef.value?.focus()
       })
     }
   })
 
-  // Remove scroll event listener on unmount
   onUnmounted(() => {
     if (scrollContainer.value) {
       scrollContainer.value.removeEventListener('scroll', checkScrollPosition)
     }
   })
 
-  // Simplify the onUpdated hook
   onUpdated(() => {
     checkScrollPosition()
   })

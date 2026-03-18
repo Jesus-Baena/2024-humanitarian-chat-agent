@@ -19,5 +19,6 @@ export interface ChatMessage {
    */
   seq?: number
   serverId?: string
+  clientId?: string
   status?: MessageStatus
 }

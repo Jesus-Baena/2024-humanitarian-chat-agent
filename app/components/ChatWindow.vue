@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, nextTick } from 'vue'
+import { nextTick, watch } from 'vue'
 
 interface Props {
   chatId: string
@@ -7,6 +7,8 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const route = useRoute()
+const router = useRouter()
 
 const {
   messages,
@@ -17,20 +19,23 @@ const {
   errorMessage,
   isTyping,
   cancelStream,
-  retryStream
+  retryStream,
+  ready
 } = useChat(props.chatId)
 
 const { user, loading: userLoading } = useUser()
 
-// Handle initial message
-onMounted(() => {
-  if (props.initialMessage) {
-    const message = decodeURIComponent(props.initialMessage)
-    nextTick(() => {
-      sendMessage(message)
-    })
+// Wait for history to load, then handle initial message exactly once
+watch(ready, async (isReady) => {
+  if (!isReady) return
+  const msg = props.initialMessage || (route.query.message as string | undefined)
+  if (msg && messages.value.length === 0) {
+    // Clear the query param so refresh won't re-send
+    await router.replace({ query: { ...route.query, message: undefined } })
+    await nextTick()
+    sendMessage(decodeURIComponent(msg))
   }
-})
+}, { immediate: true })
 </script>
 
 <template>
@@ -54,7 +59,6 @@ onMounted(() => {
                   class="bg-primary-500/20 dark:bg-primary-400/10 rounded-lg p-4"
                 >
                   <p class="text-gray-900 dark:text-gray-100">
-                    <!-- Render user message with MDC -->
                     <MDC :value="message.content" tag="div" />
                   </p>
                 </div>
@@ -69,10 +73,15 @@ onMounted(() => {
               <div class="flex-1 min-w-0">
                 <div class="bg-gray-100 dark:bg-gray-800/50 rounded-lg p-4">
                   <div class="prose dark:prose-invert max-w-none">
-                    <!-- Show placeholder while streaming and content is empty -->
+                    <!-- Typing placeholder -->
                     <template v-if="isTyping && !message.content">
                       <span class="text-gray-400 animate-pulse">...</span>
                     </template>
+                    <!-- During streaming: plain text for performance -->
+                    <template v-else-if="isLoading && message.status === 'pending'">
+                      <div style="white-space: pre-wrap;">{{ message.content }}</div>
+                    </template>
+                    <!-- Completed: render markdown -->
                     <template v-else>
                       <MDC :value="message.content" tag="div" />
                     </template>

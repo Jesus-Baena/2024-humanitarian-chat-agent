@@ -2,7 +2,7 @@
 async function handleSendMessage(message: string) {
   if (!message.trim()) return
 
-  const chatId = Date.now().toString()
+  const chatId = crypto.randomUUID()
   await navigateTo(`/chat/${chatId}?message=${encodeURIComponent(message.trim())}`)
 }
 </script>
